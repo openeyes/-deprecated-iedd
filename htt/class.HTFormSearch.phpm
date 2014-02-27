@@ -1,0 +1,15 @@
+<?php
+
+abstract class HTFormSearch extends HTForm
+{
+      protected $hidden_fields; //assoc array of name=>value hidden fields. menu, mode for
+                                //navigation through the higher classes
+      public function __construct($db, $hiddens)
+      {
+            parent::__construct($db);
+            $this->hidden_fields = $hiddens;
+      }
+      abstract public function get_query();
+}
+?>
+

@@ -1,0 +1,198 @@
+<?php
+/* HTlist class. A class to display a query as a table. The query string is set it
+looks in $_SESSION['query'] to get the most recent query string, unless one is supplied
+in the constructor. It needs a HTdatabase
+object, and an associative array of urls for internal links.
+Optionally it contains an order by field, a start and size field. It constructs
+a form at the top of the table to manage ordering and next/previous page.
+
+*/
+class HTList implements HTWebComponent
+{
+      private static $default_size = 20;
+      private $order_by; //field for ordering
+      private $descending; //is the order done descending
+      private $start; // x in limit x, y
+      private $size; // y in limit x, y (MySQL)
+      private $db; // the database connection
+      private $query; // the query string
+      private $columns; // number of columns/fields
+      private $rows; // total number of rows in unlimited query
+      private $valid; //is the query valid?
+      private $result; //db result object
+      private $context; //it is assumed that this class will call the same page. The context is the further 'get' fields.
+      					// eg menu=patient&mode=display
+      private $link_array; //assoc array with those fields that should be hyperlinked
+      					   //('column name'=>'menu=patient&mode=display&subjectid=')
+      private $fields; //array of column names
+      private $res_resource; //the HTResult_MySQL object
+
+      public function __construct($context, $link_array = "", $query = "")
+      {
+            $this->db = HTDB_MySQL::getInstance();
+            $this->context = $context;
+            $this->link_array = $link_array;
+            $this->valid = true;
+            if($query != "")
+            {
+                  $this->query = $query;
+                  $_SESSION['query'] = $query; //so that we can requery next time
+            }
+            else if(isset($_SESSION['query']) && isset($_REQUEST['requery']))
+            {
+                  if($pos = stripos($_SESSION['query'], " order by"))
+                        $this->query = substr($_SESSION['query'],0, $pos);
+                  else
+                        $this->query = $_SESSION['query'];
+            }
+            else
+                  $this->valid = false;
+            if(isset($_REQUEST['orderby']))
+	    	      $this->order_by = $_REQUEST['orderby'];
+	        else
+	    	      $this->order_by = false;
+	        if(isset($_REQUEST['desc']))
+	    	      $this->descending = $_REQUEST['desc'];
+	        else
+	    	      $this->descending = "asc";
+	        if(isset($_REQUEST['start']))
+	    	      $this->start = $_REQUEST['start'];
+	        else
+	    	      $this->start = 0;
+	        if(isset($_REQUEST['size']))
+		          $this->size = $_REQUEST['size'];
+	        else
+		          $this->size = self::$default_size;
+      }
+      public function setSize($size){$this->size = $size;}
+      public function setStart($start){$this->start = $start;}
+      public function display()
+      {
+            if($this->valid && $this->runQuery())
+            {
+                  $this->displayHeader();
+                  $this->displayTable();
+                  $this->displayFooter();
+            }
+            else
+                  echo "<p>No results found</p>";
+      }
+
+      /** Private implementation details here down */
+
+      private function runQuery() //run the query. return false if no rows in query else return true
+      {
+            //get total number of rows from query
+            $this->db->prepare($this->query);
+            try
+            {
+                $res = $this->db->execute();
+            }
+            catch(Exception $e)
+            {
+                return $this->valid= false;
+            }
+            $this->rows = $res->num_rows();
+            $this->fields = $res->fetch_fields();
+
+            //now construct order by and limit clauses
+            if($this->order_by)
+                  $this->query .= " order by ".$this->order_by." ".$this->descending;
+            $this->query .= " limit ".$this->start.", ".$this->size;
+            //echo "<p>DEBUG $this->query</p>";
+            $this->db->prepare($this->query);
+            try
+            {
+                $r = $this->db->execute();
+            }
+            catch(Exception $e)
+            {
+                 return $this->valid= false;
+            }
+
+            if($r->num_rows() == 0)
+                  return $this->valid = false;
+            else
+            {
+                  $this->columns = $r->num_fields();
+                  $this->res_resource= $r;
+                  return true;
+            }
+      }
+      private function displayHeader()
+      {
+            ?>
+            <table border='1'><tr>
+            <td colspan='<?php echo $this->columns ?>'
+            align='center'><?php echo $this->nav_header() ?></td></tr>
+            <tr><!-- The header to allow ordering -->
+            <?php
+            $desc = ($this->descending == "desc") ? "asc" : "desc";
+            $linkstr = "\n<td><a href='".$_SERVER['PHP_SELF']."?".$this->context."&start=".$this->start;
+            $linkstr .="&size=".$this->size."&requery=true&desc=".$desc."&orderby=";
+            foreach($this->fields as $field)
+                  echo $linkstr.$field."'>".$field."</a></td>";
+            echo "</tr>";
+      }
+      private function nav_header()
+      {
+            $nav_head = "$this->rows records found.";
+            if($this->rows > $this->size)
+            {
+                  $pages = ceil($this->rows/$this->size);
+		          $current_page = ceil($this->start/$this->size)+1;
+		          $nav_head .= "<br />";
+                  $vars ="&orderby=".$this->order_by."&desc=".$this->descending;
+		          if($current_page > 1)
+		          {
+			          $nav_head .= "<a href='".$_SERVER['PHP_SELF']."?".$this->context.$vars."&requery=true&start=0'><<</a>";
+                      $nav_head .= "&nbsp;&nbsp;";
+                      $nav_head .= "<a href='".$_SERVER['PHP_SELF']."?".$this->context.$vars."&requery=true&start=".($this->start-$this->size);
+                      $nav_head .= "'><</a>";
+                      $nav_head .= "&nbsp;&nbsp;";
+                  }
+		          else
+		  	          $nav_head .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+
+                  $nav_head .= " Page $current_page of $pages ";
+
+		          if($current_page != $pages)
+                  {
+			          $nav_head .= "<a href='".$_SERVER['PHP_SELF']."?".$this->context.$vars."&requery=true&start=".($this->start+$this->size)."'>></a>";
+			          $nav_head .= "&nbsp;&nbsp;";
+			          $nav_head .= "<a href='".$_SERVER['PHP_SELF']."?".$this->context.$vars."&requery=true&start=".($this->size*($pages -1))."'>>></a>";
+			          $nav_head .= "&nbsp;&nbsp;";
+		          }
+	              else
+                      $nav_head .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+            }
+            return $nav_head;
+      }
+
+      private function displayTable(){
+            while($row = $this->res_resource->fetch_assoc())
+            {
+                  echo "\n<tr>";
+                  foreach($row as $field=>$value)
+                  {
+                        if($value == "")
+                        {
+                              echo "\n<td>&nbsp;</td>";
+                              continue;
+                        }
+                        if($field == 'dob')
+                              $value= HTUtils::date_mysql_en($value);
+                        if($this->link_array[$field])
+                              echo "\n<td><a href='".$_SERVER['PHP_SELF']."?".$this->link_array[$field]."$value'>$value</a></td>";
+                        else
+                              echo "\n<td>$value</td>";
+                  }
+                  echo "\n</tr>";
+            }
+      }
+      private function displayFooter()
+      {
+            echo "\n</table>";
+      }
+}
+?>

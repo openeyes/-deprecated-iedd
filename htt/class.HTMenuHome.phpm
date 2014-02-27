@@ -1,0 +1,12 @@
+<?php
+class HTMenuHome extends HTMenu
+{
+	public function __construct(){
+			$this->addButton(new HTLink("Home", array("menu"=>"home"), "Go to root menu"));
+			$this->addButton(new HTLink("Patient", array("menu"=>"patient"), "Patient data"));
+			$this->addButton(new HTLink("Family", array("menu"=>"family"), "Family data"));
+			$this->addButton(new HTLink("Samples", array("menu"=>"sample"), "Sample data"));
+			$this->addButton(new HTLink("Experiments", array("menu"=>"assay"), "Laboratory molecular tests"));
+	}
+}
+?>

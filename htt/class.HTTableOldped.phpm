@@ -1,0 +1,18 @@
+<?php
+class HTTableOldped extends HTTable
+{
+    const key= "OldPedigreeID";
+    const table = "pedigreeold";
+    protected $fields = array("NEWGC" => "New number", "OldPedigree" => "Old pedigree number");
+    public function __construct($id = false)
+    {
+        $this->key_name= self::key;
+        $this->table_name= self::table;
+        parent::__construct($id);
+    }
+    public function displayShort()
+    {
+        echo $this->oldpedigree."&nbsp;";
+    }
+}// end of HToldped class
+?>

@@ -1,0 +1,15 @@
+<?php
+
+class HTMenuAssay extends HTMenu
+{
+	public function __construct(){
+			$this->addButton(new HTLink("Home", array("menu"=>"home"), "Go to root menu"));
+			$this->addButton(new HTLink("Experiment Lookup", array("menu"=>"assay", "mode"=>"search"),
+				" Search for laboratory data"));
+			$this->addButton(new HTLink("Experiment New", array("menu"=>"assay", "mode"=>"add"), "Enter new laboratory result"));
+
+	}
+}
+
+
+?>

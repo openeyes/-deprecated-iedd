@@ -1,0 +1,9 @@
+<?php
+class HTMenuFamily extends HTMenu
+{
+	public function __construct(){
+		$this->addButton(new HTLink("Home", array("menu" => "home"), "Go to root menu"));
+		$this->addButton(new HTLink("Family Search", array("menu"=>"family", "mode"=>"search"), "Family serach"));
+	}
+}
+?>

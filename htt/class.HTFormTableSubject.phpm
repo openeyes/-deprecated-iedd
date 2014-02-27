@@ -1,0 +1,72 @@
+<?php
+class HTFormTableSubject extends HTForm
+{
+	  private $httable; // a HTTable object
+	  private $mode;
+      public function __construct($id = false){
+          $this->httable= new HTTableSubject($id);
+          $this->mode = $_REQUEST['mode'];
+      }
+      public function display(){
+            //displays a form to add or update a patient record. $mode is either 'add' or 'update'
+            //If $mode is update, an update button is shown below the form with the appropriate
+            //url. If mode is $add, an add button is shown.
+            //For each form the values of the fields are drawn from $_REQUEST[]
+            //echo "<p>DEBUG HTpatientAddUpdate_new</p>";
+            $diagnosis_array = array(''=>'');
+            $diagnosis_array = array_merge($diagnosis_array, HTTableDiagnosis::get_diagnosis_array(30));
+            $gender_array = array(''=>'','Male'=>'Male', 'Female'=>'Female');
+            $status_array = array('UNKNOWN'=>'Unknown','AFFECTED'=>'Affected', 'UNAFFECTED'=>'Unaffected', 'CARRIER'=>'Carrier');
+            //$subject = new HTsubject($this->db,$this->subjectid);
+            //$this->httable->display();
+            //echo "<p>DEBUG subjectid is ".$this->subjectid." and mode is $mode</p>";
+            $record = array(
+                  new HTControlTextbox("Unique&nbsp;ID",'subjectid','', true),
+                  new HTControlTextbox("First&nbsp;Name",'forename','', false),
+                  new HTControlTextbox("Middle&nbsp;Initial(s)",'initial','', false),
+                  new HTControlTextbox("Surname",'surname','', false),
+                  new HTControlTextbox("Maiden&nbsp;Name",'maiden','', false),
+                  new HTControlTextbox("Date&nbsp;of&nbsp;Birth (dd-mm-yyyy)",'dob','', false, 10),
+                  new HTControlTextbox("Year&nbsp;of&nbsp;Birth",'yob','', false,4),
+                  new HTControlSelect("Gender",'gender',$gender_array),
+                  new HTControlTextbox("MEH&nbsp;number",'mehno','', false),
+                  new HTControlSelect("Status",'status',$status_array),
+                  new HTControlTextbox("Family&nbsp;Number",'newgc','', false),
+                  new HTControlTextarea("Comments", 'text','', false),
+                  new HTControlTextarea("Diagnoses", 'diagnosis', '', true),
+                  new HTControlSelect("Diagnosis", 'diagnosis_add', $diagnosis_array)
+            );
+            if($this->mode == 'update')//this should be false if $mode is 'add'
+            {
+                //set control values from HTpatient
+                foreach($record as $r)
+                {
+                    $prop = $r->get_name() ;
+                    if($prop == 'dob' )
+                        $r->set_value(HTUtils::date_mysql_en($this->httable->$prop));
+                    else
+                        $r->set_value($this->httable->$prop);
+
+                }
+            }
+            echo "\n<form method='post' name='form_edit' action='".$SERVER['PHP_SELF']."' onSubmit=' return validate_subject(this);'>";
+            echo "\n<input type='hidden' name='menu' value='patient' />";
+            echo "\n<input type='hidden' name='mode' value='$this->mode"."_process' />";
+            echo "\n<table border='1' cellpadding='3'>";
+            foreach($record as $r)
+            {
+                  echo "\n<tr>";
+                  $r->display(true);
+                  echo "</tr>";
+            }
+            //add two buttons for selecting or deleting a diagnosis
+            echo "\n<tr><td align='center'><input type='button' value='Add Diagnosis' ";
+            echo "onClick ='add_diagnosis(document.form_edit.diagnosis_add, document.form_edit.diagnosis);' /></td>";
+            echo "\n<td align='center'><input type='button' value='Delete Diagnosis' ";
+            echo "onClick='del_diagnosis(document.form_edit.diagnosis_add, document.form_edit.diagnosis);' /></td></tr>";
+            echo "\n<tr><td colspan='2' align='center'><input type='submit' value='".strtoupper($this->mode)."' /></td></tr>";
+            echo "\n</table>";
+            echo "\n</form>";
+      }
+}
+?>

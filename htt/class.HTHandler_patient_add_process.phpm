@@ -1,0 +1,41 @@
+<?php
+
+class HTHandler_patient_add_process extends HTHandler_priv
+{
+	private $HTTable; //an HTTableSubject object
+	public function __construct(){
+		parent::__construct();
+		$this->HTTable = new HTTableSubject();
+	}
+	public function constructPage(){
+		$this->getRequestData();
+        try
+        {
+            $this->HTTable->addNew();
+            $this->page->addComponent(new HTString("The following record has just been added."));
+            $this->page->addComponent(new HTRecordDisplay("HTTableSubject", $this->HTTable));
+            $_REQUEST['subjectid'] = $this->HTTable->get_unique(); //otherwise subjectid not transmitted
+            $_REQUEST['menu'] = 'patient';$_REQUEST['mode'] = 'display';//inactivates correct menu button
+            $this->page->setMenu(new HTMenuPatientSpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that record"));
+            $this->page->setMenu(new HTMenuPatient());
+        }
+	}
+
+    protected function getRequestData()
+    {
+	    $_REQUEST['dob'] = HTUtils::date_en_mysql($_REQUEST['dob']);
+        foreach($_REQUEST as $key=>$value)
+            $this->HTTable->$key = $value;
+    }
+
+}
+
+
+
+
+
+?>

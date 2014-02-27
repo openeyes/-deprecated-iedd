@@ -1,0 +1,19 @@
+<?php
+
+class HTHandler_assay_add extends HTHandler_priv
+{
+	public function constructPage(){
+		if($dna = $_REQUEST['dnano'])
+		{
+			$sample = new HTTableSample($dna);
+			$subject = new HTTableSubject($sample->subjectid);
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", $subject));
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableSample", $sample));
+			$_REQUEST['subjectid'] = $sample->subjectid; //so that the HTFromTableAssay can display this
+		}
+
+		$this->page->addComponent(new HTFormTableAssay());
+		$this->page->setMenu(new HTMenuAssay());
+	}
+}
+?>

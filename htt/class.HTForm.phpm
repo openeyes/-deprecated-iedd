@@ -1,0 +1,10 @@
+<?php
+//the most basic form - just displays itself
+abstract class HTForm implements HTWebComponent
+{
+
+}
+
+
+?>
+

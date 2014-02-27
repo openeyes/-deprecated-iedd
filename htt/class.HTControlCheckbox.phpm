@@ -1,0 +1,24 @@
+<?php
+
+class HTControlCheckbox extends HTControl
+{
+	protected $value; //true or false in this case
+
+	public function __construct($label, $name, $value = false)
+	{
+		parent::__construct($label, $name);
+		$this->value = $value;
+	}
+	public function set_value($v){$this->value = ($v ? true : false) ;}
+	public function display($table){
+        if($table)
+		    $display = "<td align='right'>".$this->label."&nbsp;</td><td align='left'>";
+        else
+            $display = $this->label."&nbsp;";
+		$display .= "<input type='checkbox' name='".$this->name."' ";
+        $display .= $this->value ? "checked='true' ": "";
+		$display .= $table ? "</td>" : "";
+		echo $display;
+	}
+}
+?>

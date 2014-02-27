@@ -1,0 +1,24 @@
+<?php
+class HTMenuSampleSpecific extends HTMenuSample
+{
+	public function __construct(){
+		parent::__construct();
+		if($id = $_REQUEST['dnano']) //only add these if a specific dna has been requested
+		{
+			$this->addButton(new HTLink("Sample Details",
+				array("menu"=>"sample", "mode" => "display", "dnano"=> $id),
+				"Display sample details"));
+			$this->addButton(new HTLink("Sample Extract",
+				array("menu"=>"address", "mode" => "add", "dnano"=> $id),
+				"Extract a sample"));
+			$this->addButton(new HTLink("New Experiment",
+				array("menu" =>"assay", "mode" => "add", "dnano"=> $id),
+				"Record a new experiment on this sample"));
+		}
+		if($id = $_REQUEST['subjectid'])
+			$this->addButton(new HTLink("Patient Details",
+				array("menu"=>"patient", "mode" => "display", "subjectid"=> $id),
+				"Display patient details"));
+	}
+}
+?>

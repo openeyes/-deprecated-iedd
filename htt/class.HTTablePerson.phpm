@@ -1,0 +1,35 @@
+<?php
+
+class HTTablePerson extends HTTable
+{
+    protected $fields = array(
+        "user" => "User",
+        "password" => "Password",
+        "realname" => "Real name",
+        "priv" => "Privileges"
+        );
+    const key = "";
+    const table = "person";
+    public function __construct($id = false)
+    {
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+    }
+    public function verify($name, $passwd)
+    {
+        $query = "select * from ".$this->table_name." where user=':1' and ";
+        $query .= "password = password(':2')";
+        $this->database->prepare($query);
+        $result = $this->database->execute($name, $passwd);
+        if($result->num_rows()==1)
+        {
+            $this->data = $result->fetch_assoc();
+            return true;
+        }
+        else
+            return false;
+    }
+}
+
+?>

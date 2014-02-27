@@ -1,0 +1,15 @@
+<?php
+
+class HTHandler_home extends HTHandler
+{
+	public function constructPage(){
+		$buttons = array(
+			new HTLink("Home", array ("menu"=>"home"),"Go homeward"),
+			new HTLink("Patient", array("menu"=> "patient"),"Go and do something with a patient")
+			);
+		$menu = new HTMenuHome();
+		$this->page =  new HTPage();
+		$this->page->setMenu($menu);
+	}
+}
+?>

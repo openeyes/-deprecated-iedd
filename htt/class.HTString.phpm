@@ -1,0 +1,12 @@
+<?php
+class HTString implements HTWebComponent
+{
+	public function __construct($str){
+		$this->str = $str;
+	}
+	public function display(){
+		echo "<p>$this->str</p>";
+	}
+}
+
+?>

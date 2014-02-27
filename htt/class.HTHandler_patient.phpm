@@ -1,0 +1,13 @@
+<?php
+
+class HTHandler_patient extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormSearchPatient());
+		$_REQUEST['mode'] = 'search'; //inactivates appropriate button
+		$this->page->setMenu(new HTMenuPatient());
+	}
+
+}
+
+?>

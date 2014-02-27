@@ -1,0 +1,48 @@
+<?php
+class HTControlSelect extends HTControl
+ {
+ 	//protected $readonly; //I have decided only to use this to GET data, so readonly won't be needed
+	protected $items = array(); //an associative array.
+	protected $multiple; //unlikely to use this also;
+	protected $valid;
+	protected $size; // how many options to show at once (default on browsers is one)
+	protected $selected; //the value of the selected item
+
+	//functions
+	public function __construct($label, $name, $items, $selected = ""){
+		parent::__construct($label, $name);
+		$this->size = ""; //ie default behaviour is to omit the size attribute
+		$this->set_items($items); //also sets $this->valid
+		$this->selected = $selected;
+		$this->multiple = false;
+	}
+    public function set_value($value){$this->selected = $value;}
+	public function set_multiple($m=true){$this->multiple = $m;}
+	public function set_size($s){$this->size= $s;}
+	public function set_items($items){
+		if(is_array($items)){$this->items = $items; $this->valid = true;}
+		else $this->valid = false;
+	}
+	public function display($table, $size=""){
+		if(!$this->valid) return false;
+		$this->table = $table;
+		$this->size = $size;
+		$display = $this->table? "<td align='right'>".$this->label."&nbsp;</td><td align='left'>" : $this->label."&nbsp;";
+		$display .= "\n<select name='".$this->name."' ";
+		if($this->multiple) $display .= "multiple='true' ";
+		if($this->size != "") $display .= "size='".$this->size."' ";
+		if($this->JS) $display .= $this->JS;
+            $display .= ">";
+		foreach($this->items as $key=>$value)
+		{
+                  if(strtoupper($key) == strtoupper($this->selected))
+                        $display .= "\n<option value=\"$key\" selected='true'>$value</option>";
+                  else
+			   			$display .= "\n<option value=\"$key\">$value</option>";
+        }
+		$display .= "\n</select>";
+		$display .= $this->table? "</td>" : "";
+		echo $display;
+	}
+}
+?>

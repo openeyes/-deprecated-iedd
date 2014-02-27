@@ -1,0 +1,10 @@
+<?php
+
+class HTHandler_patient_add extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormTableSubject());
+		$this->page->setMenu(new HTMenuPatient());
+	}
+}
+?>

@@ -1,0 +1,31 @@
+<?php
+class HTHandler_family_update_process extends HTHandler_priv
+{
+	private $httable;
+	public function constructPage(){
+        try
+        {
+			$this->httable = new HTTableFamily($_REQUEST['newgc']);
+			$this->getRequestData();
+            $this->httable->update();
+            $this->page->addComponent(new HTString("The following record has just been updated."));
+            $this->page->addComponent(new HTRecordDisplay("HTTableFamily", $this->httable));
+            $_REQUEST['menu'] = 'family'; //to inactivate the button of the menu
+            $this->page->setMenu(new HTMenuFamilySpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that record"));
+            $this->page->setMenu(new HTMenuFamily());
+        }
+	}
+
+    protected function getRequestData()
+    {
+        foreach($_REQUEST as $key=>$value)
+            $this->httable->$key = $value;
+        $this->httable->lastupdatedby = $_SESSION['realname'];
+    }
+
+}//end of HTHandler_family_process_update
+?>

@@ -1,0 +1,15 @@
+<?php
+
+class HTHandler_address_add extends HTHandler_priv
+{
+	public function constructPage(){
+		//we assume that $_REQUEST['dnano'] exists.
+		$sample = new HTTableSample($_REQUEST['dnano']);
+		$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", new HTTableSubject($sample->subjectid)));
+		$this->page->addComponent(new HTRecordDisplayShort("HTTableSample", $sample));
+		$this->page->addComponent(new HTFormTableAddress());
+		$this->page->setMenu(new HTMenuSampleSpecific());
+	}
+}
+
+?>

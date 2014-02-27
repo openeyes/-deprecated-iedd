@@ -1,0 +1,106 @@
+<?php
+class HTTableSample extends HTTable
+{
+    const key = "dnano";
+    const table = "sample";
+    protected $fields = array(
+            "subjectid" => "Subject ID",
+            "bloodtaken" => "Date of sample",
+            "comment" => "Comment",
+            "type" => "Sample type",
+            "loggedby" => "Logged by",
+            "timelogged" => "Date logged");
+    private $address_array = array(); //of HTTableAddress objects as a one to many (dnano->address) relationship
+
+    /////////////////////////////
+    // public functions
+    /////////////////////////////
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+        if($id)
+        {
+            $this->set_address();
+        }
+    }
+    public function __get($var)
+    {
+        $retval = parent::__get($var);
+        switch($var)
+        {
+            case "address" : $retval = $this->format_addresses(); break;
+            default : break;
+        }
+        return $retval;
+    }
+    public function displayShort()
+    {
+        $str = "DNA number:".$this->unique;
+        $str .= $this->loggedby ? " ".$this->fields['loggedby']." ".$this->data['loggedby'] : "";
+        $str .= $this->timelogged ? " on ".$this->data['timelogged'] : "";
+        $str .= $this->address ? " address ".$this->address : "";
+        echo $str;
+    }
+    public function delete()
+    {
+        parent::delete();
+        foreach($this->address_array as $add)
+            $add->delete();
+    }
+
+ 	/////////////////////////////////////
+    // protected and private functions //
+    /////////////////////////////////////
+
+     protected function display_data()
+     {
+		 parent::display_data();
+         if($this->address_array)
+         {
+               echo "\n<li>samples -";
+               foreach($this->address_array as $a)
+               {
+                   $a->display();
+                   echo "\n<br />";
+               }
+               echo "\n</li>";
+         }
+     }
+     private function format_addresses()//turns array into friendly string of addresses
+     {
+           foreach($this->address_array as $a)
+                 $str .= $a->format().", ";
+           return HTUtils::term_str($str); //remove terminating ", "
+     }
+    private function set_address()//when object constructed with id, gets addresses into object
+    {
+             foreach($this->address_array as $i => $x) //delete old addresses from array
+                 unset($this->address_array[$i]);
+             $query="select ".HTTableAddress::key." from ".HTTableAddress::table." where ";
+             $query .= HTTableSample::key."=".$this->unique;
+             $this->database->prepare($query);
+             if(!($res=$this->database->execute()))
+                 throw new Exception;
+             while($row = $res->fetch_array())
+                 array_push($this->address_array, new HTTableAddress($row[0]));
+    }
+	protected function get_data() //override parent function
+	{
+         if(!$this->unique)
+             throw new Exception("Attempted retrieval of data when there is no unique id");
+	     $query = "select dnano, subjectid, bloodtaken, type, loggedby, date_format(timelogged,'%T, %D %M %Y') as timelogged, comment ";
+	     $query .= "from ".$this->table_name." where ".$this->key_name." = ".$this->unique;
+	     $this->database->prepare($query, "failure to get data from ".$this->table_name." with id=".$this->unique);
+	     $r = $this->database->execute();
+	     if($r->num_rows() !=1)
+	           throw new Exception("No rows from $query");
+	     $res_array = $r->fetch_assoc();
+         foreach($this->fields as $data=>$display)
+         {
+			$this->data[strtolower($data)] = $res_array[$data];
+			$this->dirty_data[strtolower($data)] = false;
+		 }
+	}
+} //end of HTTableSample class
+?>

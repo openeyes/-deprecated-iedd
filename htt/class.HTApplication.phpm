@@ -1,0 +1,60 @@
+<?php
+/*
+The HTApplication class has one public method, start() which begins the whole kerboodle.
+Note that the constructor is private, and that the class is intantiated using the
+getInstance() function which contains a static HTapplication variable. This is the
+singleton design pattern.
+The start() method acts as a dispatcher for events which each construct a HTPage object.
+Finally HTPage::write_content() is called to provide the page.
+*/
+class HTApplication {
+	private $LOGOUT_MINS = 15;
+	private $page; //an HTPage object supplied by the relevant event handler
+	private $defaults = array("patient"=>"search","family"=>"search", "sample"=>"search",
+	"home" => "page", "assay" => "search", "logout"=>"logout");
+	public function getLogoutTime()
+	{
+		return $this->LOGOUT_MINS;
+	}
+
+	public function getInstance(){
+		static $app;
+		if(!isset($app)){
+			$app = new HTApplication();
+		}
+		return $app;
+	}
+
+	public function start(){
+		$sesh = new HTHandler_session();
+		if(!($this->page = $sesh->getPage()))//that is if returns false, user is loggedin - generate appropriate page
+		{
+			$classname = "HTHandler_".$_REQUEST['menu'];
+			HTLogger::getInstance()->logEvent();
+			if(isset($_REQUEST['mode']))
+				$classname .= "_".$_REQUEST['mode'];//eg HTHandler_DNA_search
+			else
+			{
+				$classname .= "_".$this->defaults[$_REQUEST['menu']];
+				$_REQUEST['mode'] = $this->defaults[$_REQUEST['menu']]; //inactivates menu item
+			}
+			if(class_exists($classname))
+			{
+				$handler = new $classname();
+				$this->page = $handler->getPage();
+			}
+			else
+			{
+				$this->page = new HTPage();
+				$this->page->setMenu(new HTMenuHome());
+				$this->page->setTitle("Unable to process request");
+				$str = $_REQUEST['menu']."_".$_REQUEST['mode'];
+				$this->page->addComponent(new HTString("Cannot perform the requested event ($str). Sorry!"));
+			}
+		}
+		$this->page->writeContent();
+	}
+}//end of HTApplication class
+
+
+?>

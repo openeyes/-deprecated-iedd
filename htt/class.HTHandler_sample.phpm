@@ -1,0 +1,11 @@
+<?php
+
+class HTHandler_sample extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormSearchSample());
+		$_REQUEST['mode'] = "search"; //inactivates the sample search menu item.
+		$this->page->setMenu(new HTMenuSample());
+	}
+}
+?>

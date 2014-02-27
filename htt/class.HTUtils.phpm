@@ -1,0 +1,22 @@
+<?php
+
+//a class with static functions that enable various general utilities
+
+class HTUtils
+{
+      static public function date_en_mysql($date_en)
+      {
+            //converts an english date (dd*mm*yyyy) to a MySQL one (yyyy-mm-dd)
+            return $date_en == "" ? "" : substr($date_en,6,4)."-".substr($date_en,3,2)."-".substr($date_en,0,2);
+      }
+      static public function date_mysql_en($date_mysql)
+      {
+          //converts a mysql data(yyyy-mm-dd) to an English one (dd*mm*yyyy)
+          return $date_mysql == "" ? "" : substr($date_mysql,8,2)."/".substr($date_mysql,5,2)."/".substr($date_mysql,0,4);
+      }
+    static public function term_str($str, $int = 2) //gets rid of last $int from $str
+    {
+        return substr($str,0,strlen($str) - $int);
+    }
+}
+?>

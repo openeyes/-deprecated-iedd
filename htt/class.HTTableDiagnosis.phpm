@@ -1,0 +1,73 @@
+<?php
+//this class is a little different from the other classes as the table
+//has no unique identifier, the primary key being (subjectid, diagnosis).
+//addNew(), delete() are both allowed but update() is not.
+//addNew() uses the base class function which works even when
+// $this->keyname is "". update() is returned doing nothing
+// and delete() is overridden. (delete_diagnosis()).
+
+class HTTableDiagnosis extends HTTable
+{
+    const key = "";
+    const table = "diagnosis";
+    protected $fields = array("subjectid" => "Subject ID", "diagnosis" => "Diagnosis");
+
+    public function __construct($id=false){
+        $this->key_name = self::key;//"";
+        $this->table_name = self::table;//"diagnosis";
+        parent::__construct($id);
+    }
+    public function __set($var, $value)
+    {
+        if(strtolower($var) == "diagnosis" && $value)
+                $this->check_valid_diagnosis($value);
+        parent::__set($var, $value);
+    }
+    public function displayShort()
+    {
+           echo $this->diagnosis ? $this->diagnosis : "";
+    }
+    public function delete(){ $this->delete_diagnosis(); /*parent::delete();*/}
+    public function update() { return ; }//never update a diagnosis, create a new one instead
+    public static function get_diagnosis_array($maxlength = 20)
+      {
+            //get an associated array thus $diagnosis['cataract'] = cataract fo use in option controls
+            $query = "select diagnosis from diagnosislist order by Priority";
+            $db = HTDB_MySQL::getInstance();
+            $db->prepare($query, "cannot create diagnosis array from diagnosislist table");
+            $r = $db->execute();
+            $diagnosis = array();
+            while($row = $r->fetch_array())
+            {
+                $key = $value = $row[0];
+                if(strlen($value) > $maxlength - 2)
+                              $value = substr($value, 0, $maxlength - 2)."..";
+                $diagnosis[$key] = $value;
+            }
+            return $diagnosis;
+      }
+    private function check_valid_diagnosis($value)
+    {
+        //$value = addslashes($value);
+        $query = " select * from diagnosislist where diagnosis=':1'";
+        $this->database->prepare($query);
+        $r = $this->database->execute($value);
+        if($r->num_rows() !=1)
+                  throw new Exception("Not a valid diagnosis: $value");
+    }
+    private function delete_diagnosis()
+    {
+        $query = "delete from diagnosis where ";
+        $index=0; $val_array = array();
+        foreach($this->data as $field=>$value)
+        {
+			$index++;
+            $query .="$field='$index and ";
+            array_push($val_array, $value);
+		}
+        $query = HTUtils::term_str($query, 5);
+        $this->database->do_query($query);
+        $this->database->execute($val_array);
+    }
+} //end of HTdiagnosis
+?>

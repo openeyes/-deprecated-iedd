@@ -1,0 +1,119 @@
+<?php
+
+
+
+class HTTablePedigree extends HTTable
+{
+    const key = "newgc";
+    const table = "pedigree";
+    protected $fields = array(
+            "Inheritance" => "Inheritance",
+            "consanguinity" => "Consanguinous?",
+            "FreeText" => "Comment");
+    protected $Inheritance_enum = array("autosomal dominant", "autosomal dominant with reduced penetrance",
+        "autosomal recessive", "mitochondrial", "simplex", "x-linked recessive");
+    protected $Consang_enum = array("y", "n");
+    private $oldped_array = array(); //of HToldped objects as a one to many (dnano->address) relationship
+
+    /////////////////////////////
+    // public functions
+    /////////////////////////////
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+        if($id)
+        {
+            $this->set_oldped();
+        }
+    }
+    public function __set($var, $value)
+    {
+        if(strtolower($var) == 'inheritance' && !in_array(strtolower($value), $this->Inheritance_enum))
+            $value = "Unknown/other";
+        if(strtolower($var) == 'consanguinity')
+        {
+			$valuefirst = strtolower(substr($value,0,1));
+        	if(!in_array($valuefirst, $this->Consang_enum) || $value == "")
+        		$value = 'n';
+        	else
+        		$value = substr($value,0,1);
+		}
+    }
+    public function __get($var)
+    {
+        $retval = parent::__get($var);
+        switch($var)
+        {
+            case "oldpeds" : $retval = $this->format_oldpeds(); break;
+            default : break;
+        }
+        return $retval;
+    }
+
+    public function delete(){
+		//check that there are no persons with this newgc
+		if(!$this->deleteIntegrity())
+			throw new Exception("Cannot delete pedigree $this->unique when subjects still exist");
+		parent::delete();
+	}
+    public function display()
+    {
+        echo "\n<ul>";
+        $this->display_data();
+        echo "\n</ul>";
+     }
+    public function format()
+    {
+        $str = "Pedigree number:".$this->unique;
+        $str .= $this->inheritance ? " Inheritance:".$this->inheritance : "";
+        $str .= $this->consanguinity ? " Consanguinity = ".$this->consanguinity : "";
+        $str .= $this->subject_array ? " Individuals -  ".count($this->subject_array) : "";
+        return $str;
+    }
+    //////////////////////////////////
+    // protected and private functions
+    //////////////////////////////////
+     protected function display_data()
+     {
+         parent::display_data();
+         if($this->oldped_array)
+         {
+               echo "\n<li>old pedigrees -";
+               foreach($this->oldped_array as $a)
+               {
+                   $a->displayShort();
+               }
+               echo "\n</li>";
+         }
+     }
+     private function format_oldpeds()
+     {
+           foreach($this->oldped_array as $a)
+                 $str .= $a->format().", ";
+           return HTUtils::term_str($str); //remove terminating ", "
+     }
+     private function set_oldped()//when object constructed with id, gets addresses into object
+     {
+		 foreach($this->oldped_array as $i => $x) //delete old addresses from array
+			 unset($this->oldped_array[$i]);
+		 $query="select ".HTTableOldped::key." from ".HTTableOldped::table." where ";
+		 $query .=HTTablePedigree::key."=".$this->unique;
+		 $this->database->prepare($query);
+		 $res = $this->database->execute();
+		 while($row = $res->fetch_array())
+			 array_push($this->oldped_array, new HTTableOldped($row[0]));
+     }
+     private function deleteIntegrity()
+     {
+		 //checks to see if pedigree members exist before deleting pedigree.
+		 $query = "select * from subject where $this->key_name=$this->unique";
+		 $this->database->prepare($query);
+		 $res = $this->database->execute();
+		 if($res->num_rows() > 0)
+		 	return false;
+		 else
+		 	return true;
+	 }
+} //end of HTsample class
+?>

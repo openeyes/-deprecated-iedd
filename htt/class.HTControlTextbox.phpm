@@ -1,0 +1,54 @@
+<?php
+class HTControlTextbox extends HTControl
+{
+	//just a simple struct to hold parameters for a text box
+	protected $readonly; //bool
+	protected $size; //size of textbox
+	protected $maxlength; //max number of chars that can be entered
+	protected $value;
+
+	//functions
+	public function __construct($label, $name, $value = "", $readonly = false, $maxlength = "14", $size = "15" ){
+		parent::__construct($label, $name);
+		$this->value = $value;
+		$this->size = $size;
+		$this->maxlength = $maxlength;
+        $this->readonly = $readonly;
+	}
+	public function set_size($s){$this->size = $s;}
+	public function set_maxlength($m){$this->maxlength = $m;}
+	public function set_value($v=""){$this->value = $v;}
+	public function set_readonly($ro){$this->readonly = $ro;}
+	public function display($table){
+        if($table)
+		    $display = "<td align='right'>".$this->label."&nbsp;</td><td align='left'>";
+        else
+            $display = $this->label."&nbsp;";
+		$display .= "<input type='text' name='".$this->name."' value=\"".$this->value."\" size='";
+        $display .= $this->size."' maxlength='".$this->maxlength."'";
+		$display .= $this->readonly? " readonly='true' />" : " />";
+		$display .= $table ? "</td>" : "";
+		echo $display;
+	}
+}
+
+?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

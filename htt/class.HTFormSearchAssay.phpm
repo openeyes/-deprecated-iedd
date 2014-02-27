@@ -1,0 +1,72 @@
+<?php
+class HTFormSearchAssay extends HTForm
+{
+	public function display()
+	{
+		//construct array for diagnoses, genes, causation select controls
+		$null_array = array(''=>'');
+		$diag_array = $null_array + HTTableDiagnosis::get_diagnosis_array(40);
+		$gene_array = $null_array + HTTableGenelist::get_gene_array(40);
+		$causation_array = $null_array + array('Not sure' => 'Not sure', 'Normal'=>'Normal', 'Polymorphism'=>'Polymorphism',
+			'Possible mutation' => 'Possible mutation');
+
+
+		////////////////start form here for subjectiid search.
+		$this->begin_form();
+		//start table here, 4 columns wide
+		echo "<table border='3' cellpadding='2'>";
+		echo "<tr>";
+		$subjectid = new HTControlTextbox("Subject&nbsp;ID", "subjectid", "", false);
+		$subjectid->display(true, 8, 7);
+		echo "</tr>";
+		echo "<td>&nbsp;</td><td align='left'><input type='submit' value='Search by SubjectID' /></td>";
+		echo "</tr>";
+		echo "</form>";
+		///////////////end of id search form
+
+		////////////////start form here for newgc search.
+		$this->begin_form();
+		//start table here, 4 columns wide
+		echo "<tr>";
+		$newgc = new HTControlTextbox("Pedigree&nbsp;ID", "newgc", "", false);
+		$newgc->display(true, 8, 7);
+		echo "</tr>";
+		echo "<td>&nbsp;</td><td align='left'><input type='submit' value='Search by Pedigree ID' /></td>";
+		echo "</tr>";
+		echo "</form>";
+		///////////////end of id search form
+
+		//////////////start form here for details search
+		$this->begin_form();
+		echo "<tr>";
+		$diagnosis = new HTControlSelect("Principal diagnosis", "diagnosis", $diag_array, "");
+		$diagnosis->display(true);
+		echo "</tr>";
+		echo "<tr>";
+		$diagnosis = new HTControlSelect("Causative gene (if known)", "geneid", $gene_array, "");
+		$diagnosis->display(true);
+		echo "</tr>";
+		echo "<tr>";
+		$assay = new HTControlTextbox("Assay", "assay", "", false);
+		$assay->display(true, 8, 7);
+		echo "</tr>";
+		echo "<tr>";
+		$effect = new HTControlSelect("Disease causation", "effect", $causation_array, "");
+		$effect->display(true);
+		echo "</tr>";
+
+		echo "<tr>";
+		echo "<td>&nbsp;</td><td align='left'><input type='submit' value='Search by details'></td></tr>";
+
+		echo "</table></form>";
+  }
+  private function begin_form()
+  {
+		//a separate function as this is used twice in the display() function
+		echo "<form method='post' action='".$_SERVER['PHP_SELF']."' />";
+		echo "<input type='hidden' name='menu' value='assay' />";
+		echo "<input type='hidden' name='mode' value='display' />";
+  }
+
+}
+?>

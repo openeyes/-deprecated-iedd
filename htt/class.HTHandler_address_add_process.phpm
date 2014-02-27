@@ -1,0 +1,35 @@
+<?php
+class HTHandler_address_add_process extends HTHandler_priv
+{
+	private $HTTable;
+	public function __construct(){
+		parent::__construct();
+		$this->HTTable = new HTTableAddress();
+	}
+	public function constructPage(){
+		$this->getRequestData();
+		try
+		{
+			$this->HTTable->addNew();
+			$sample = new HTTableSample($this->HTTable->dnano);
+			$subject = new HTTableSubject($sample->subjectid);
+			$this->page->addComponent(new HTString("The following sample has just been processed"));
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", $subject));
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableSample", $sample));//includes display of addresses
+            $this->page->setMenu(new HTMenuSampleSpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that record"));
+            $this->page->setMenu(new HTMenuSample());
+        }
+	}
+
+	protected function getRequestData()
+	{
+	    $_REQUEST['extracted'] = HTUtils::date_en_mysql($_REQUEST['extracted']);
+        foreach($_REQUEST as $key=>$value)
+            $this->HTTable->$key = $value;
+	}
+}//end of HTHandler_address_process_add class
+?>

@@ -1,0 +1,117 @@
+<?php
+
+//the new page. A more flexible class that can have a menu and a main component added. These both implement
+//the HTWebComponent interface so that display() can be called on them. All style and Javascript have been moved into
+//htt.css and htt.js files respectively
+
+class HTPage
+{
+	protected $menu; //an HTMenu object or a child
+	protected $components = array(); //an array of objects that implement HTWebComponent interface
+	protected $title;
+	public function __construct(){$this->menu = false;}
+	public function setMenu($menu)  { $this->menu = $menu; }
+	public function setTitle($title){ $this->title = "Inherited Eye Disease ".$title; }
+	public function addComponent(HTWebComponent $comp){
+		array_push($this->components, $comp);
+	}
+	public function writeContent()
+	{
+		$this -> html_first();//prints all the stuff between <head></head> tags
+		?>
+		<body>
+		<table width="100%" height="100%" border ='0' cellpadding='3'>
+		<tr><td valign="top" align='center' colspan='2' class='header'>
+		<?php $this -> html_header($title);  ?>
+		</td></tr>
+		<tr>
+		<td class='menu' align="center" valign="middle">
+		<?php $this -> html_menu();   ?>
+		</td>
+		<td align="center" valign="middle" class='main'>
+		<?php $this -> html_main();    ?>
+		</td>
+		</tr>
+		<tr>
+		<td colspan='2' align="right" valign="bottom" class='footer'>
+		<?php $this -> html_footer();    ?>
+		</td>
+		</tr>
+		</table>
+		<?php
+		$this -> html_last();
+	}
+//protected functions follow...
+    protected function html_first(){
+        ?>
+		<html>
+		<head>
+		<title><?php echo $this->title;?></title>
+		<link rel='StyleSheet' href="htt.css" TYPE="text/css"  />
+		<script language="JavaScript" src="htt.js"></script>
+		</head>
+  		<?php
+      	}
+	protected function html_header(){
+  		// print an HTML header as a table
+  		// some useful debugging here
+  		//echo "<p>\$_SESSION: ";print_r($_SESSION); echo "</p>";
+  		//echo "<p>\$_REQUEST: ";print_r($_REQUEST);echo "</p>";
+		if(isset($_SESSION['user']))
+		{
+                  	$loginstr = strtoupper($_SESSION['realname'])." logged on at ". date("g:i a, jS F, Y.", $_SESSION['time']);
+    		      	$loginstr .= " <a href='".$_SERVER['PHP_SELF']."?menu=logout'>Log-out</a>";
+		}
+            	else
+                  	$loginstr = "" ;
+        $ioo_str = "The Institute of Ophthalmology";
+        $meh_str = "Moorfields Eye Hospital";
+
+		?>
+		<table border="0" cellpadding="5" >
+		<tr><td  valign='bottom'>
+		<img src="ioo_logo.jpg" alt="<?php echo $ioo_str; ?>" border=0 valign=bottom height = 77 width = 77 />
+		</td><td valign=bottom  align='center' class='header'>
+		<h2>Inherited Eye Disease Database</h2>
+		<?php echo $loginstr; ?>
+		</td><td valign=bottom>
+		<img src="MEH_logo.gif" alt="<?php echo $meh_str; ?>" border=0 valign=bottom height = 77 />
+		</td>
+		</tr></table>
+		<?php
+
+	}
+    protected function html_menu(){
+		if($this->menu)
+			$this->menu->display();
+		else
+			echo "<p> </p>"; //fills the table cell otherwise will look strange
+		}
+	protected function html_main(){
+		echo "\n<table border='0'><tr><td></td></tr>";
+		foreach($this->components as $component)
+		{
+			echo "\n<tr><td align='center'>\n";
+			$component->display();
+			echo "\n</td></tr>\n";
+		}
+		echo "\n</table>\n";
+	}
+	protected function html_footer()
+	{
+  	// print an HTML footer
+		?>
+  		<table border='0'>
+  		<tr>
+  		<td class='footer' align=right valign=bottom>(C) Andrew Webster<br />
+  		<?php echo "Last modified ".date('j M Y', getlastmod()); ?>
+  		</td></tr></table>
+		<?php
+	}
+	protected function html_last(){
+            ?>
+            </body></html>
+            <?php
+      	}
+} //end of HTPageNew class
+?>

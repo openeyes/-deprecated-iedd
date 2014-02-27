@@ -1,0 +1,78 @@
+<?php
+class HTFormTableAssay extends HTForm
+{
+	  private $httable; // a HTTable object
+	  private $mode;
+      public function __construct($id = false){
+          $this->httable= new HTTableAssay($id);
+          $this->mode = $_REQUEST['mode'];
+      }
+      public function display(){
+            //displays a form to add or update a laboratory test. $mode is either 'add' or 'update'
+            //If $mode is update, an update button is shown below the form with the appropriate
+            //url. If mode is $add, an add button is shown.
+            //For each form the values of the fields are drawn from $_REQUEST[]
+            $gene_array = HTTableGenelist::get_gene_array();
+            $method_array = array("Sanger"=>"Dideoxy nucleotide sequencing", "Pyrosequencing"=>"Pyrosequencing",
+            	"SSCP"=>"single strand conformation poylmorphism (SSCP)", "DHPLC"=>"WAVE DHPLC analysis",
+            	"endonuclease"=>"Endonuclease assay","APEX"=>"Asperbio chip", "Other" => "Other" );
+            $effect_array = array("Normal"=>"Normal", "Not sure"=>"Not sure","Polymorphism"=>"Polymorphism",
+            	"Possible mutation"=>"Possible mutation");
+            $homo_array = array("N"=>"No","Y"=>"Yes");
+            $record = array(
+                  new HTControlTextbox("Experiment&nbsp;ID",'testid','', true),
+                  "subjectid" => new HTControlTextbox("Subject&nbsp;ID",'subjectid','', $this->mode == 'update'),
+                  "dnano" => new HTControlTextbox("DNA&nbsp;Number",'dnano','', $this->mode == 'update'),
+                  new HTControlSelect("Gene",'geneid',$gene_array),
+                  new HTControlTextbox("Exon",'exon','', false, 25, 26),
+                  new HTControlTextbox("Assay", 'assay','',false, 25, 26),
+                  new HTControlSelect("Method",'method',$method_array),
+                  new HTControlTextbox("Forward&nbsp;Primer",'primerf','', false, 35, 36),
+                  new HTControlTextbox("Reverse&nbsp;Primer",'primerr','', false, 35, 36),
+                  "resultdate"=> new HTControlTextbox("Experiment&nbsp;date (dd/mm/yyyy)",'resultdate','', false,10),
+                  new HTControlTextbox("Nucleotide&nbsp;change",'basechange','', false, 25, 26),
+                  new HTControlTextBox("Protein change (if any)",'aminoacidchange','',false, 25, 26),
+                  new HTControlSelect("Homozygous for rare allele", "homo",$homo_array),
+                  new HTControlSelect("Disease causation", 'effect',$effect_array),
+                  new HTControlTextarea("Comment",'comment',"",false, 35, 4)
+            );
+            if($this->mode == 'update')//this should be false if $mode is 'add'
+            {
+                //set control values from HTpatient
+                foreach($record as $r)
+                {
+                    $prop = $r->get_name() ;
+                    if($prop == 'resultdate' )
+                        $r->set_value(HTUtils::date_mysql_en($this->httable->$prop));
+                    else if($prop == 'geneid')
+                    	$r->set_value($this->httable->getGeneid());//otherwise the class will return the gene name
+                    else
+                        $r->set_value($this->httable->$prop);
+                }
+            }
+            if($this->mode == 'add')
+            {
+				if($_REQUEST['subjectid'])
+					$record['subjectid']->set_value($_REQUEST['subjectid']);
+				if($_REQUEST['dnano'])
+					$record['dnano']->set_value($_REQUEST['dnano']);
+            	$record['resultdate']->set_value(date("d/m/Y"));
+			}
+            echo "\n<form method='post' name='form_edit' action='".$_SERVER['PHP_SELF']."'";
+            echo " onSubmit='return validate_assay(this);'";
+            echo ">";
+            echo "\n<input type='hidden' name='menu' value='assay' />";
+            echo "\n<input type='hidden' name='mode' value='$this->mode"."_process' />";
+            echo "\n<table border='1' cellpadding='3'>";
+            foreach($record as $r)
+            {
+                  echo "\n<tr>";
+                  $r->display(true);
+                  echo "</tr>";
+            }
+            echo "\n<tr><td colspan='2' align='center'><input type='submit' value='".strtoupper($this->mode)."' /></td></tr>";
+            echo "\n</table>";
+            echo "\n</form>";
+      }
+}
+?>

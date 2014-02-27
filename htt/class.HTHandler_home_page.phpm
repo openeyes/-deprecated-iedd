@@ -1,0 +1,9 @@
+<?php
+
+class HTHandler_home_page extends HTHandler
+{
+	public function constructPage(){
+		$this->page->setMenu(new HTMenuHome());
+	}
+}
+?>

@@ -1,0 +1,12 @@
+<?php
+
+class HTHandler_assay_search extends HTHandler_priv
+{
+	public function constructPage(){
+		$str = "Search for laboratory data here";
+		$this->page->addComponent(new HTString($str));
+		$this->page->addComponent(new HTFormSearchAssay());
+		$this->page->setMenu(new HTMenuAssay());
+	}
+}
+?>

@@ -1,0 +1,12 @@
+<?php
+
+class HTHandler_sample_search extends HTHandler_priv
+{
+	public function constructPage(){
+		$str = "Search for a DNA sample here";
+		$this->page->addComponent(new HTString($str));
+		$this->page->addComponent(new HTFormSearchSample());
+		$this->page->setMenu(new HTMenuSample());
+	}
+}
+?>

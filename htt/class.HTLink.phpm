@@ -1,0 +1,64 @@
+<?php
+
+class HTLink
+{
+      //a class to construct a form with hidden fields so that
+      //information from a standard <a href>tag</a> can be transmitted
+      //using POST rather than GET
+      private static $numforms = 0; //keeps track of number of objects created
+      private $uniqueid; //a unique id to name the form derived from $numforms value
+      private $label;
+      private $values;//name, value pairs for hidden tags
+      private $action;
+      private $info; //what to disply in the status bar
+      private $active; //false if the page is already displayed
+
+      public function __construct($label, $values = "",  $info = "", $action = ""){
+            $this->uniqueid = ++self::$numforms;
+            $this->label = $label;
+            $this->values = $values;
+            $this->action = ($action == "")? $_SERVER['PHP_SELF'] : $action;
+            $this->info = $info;
+            $this->active = false;
+            //activate only if $values do not equal $_REQUEST values
+            if($this->values != "")
+                  foreach($this->values as $name=>$value)
+                        if(!(isset($_REQUEST[$name]) && $_REQUEST[$name] == $value))
+                              $this->active = true;
+            //inactivate if no permissions in SESSION array
+      		$handler = $this->constructHandler();
+	  		if(!in_array($handler, $_SESSION['AllowedHandlers']))
+	  			$this->active = false;
+      }
+      public function display(){
+		$class = 'inactivebutton'; $onClick = 'return false;';
+		$formname = "form".$this->uniqueid;
+		if($this->active)
+		{
+				$class = 'button'; $onClick = $formname.'.submit();';
+		}
+		echo "\n<form name='$formname'  method='post' action='$this->action'>";
+		if($this->values != "")
+		foreach($this->values as $name=>$value)
+				echo "\n<input type='hidden' name='$name' value='$value' />";
+		$str =  "\n<a href='#' class='$class' onMouseover='window.status=\"$this->info\";return true;'  ";
+		$str .= "onMouseout='window.status=\"\";return true;' onClick='$onClick'>$this->label</a>";
+		$str .=  "\n</form>";
+		echo $str;
+      }
+      private function constructHandler(){//reconstruct the handler that this button calls
+		  $handler = "";
+		  if($this->values !="")
+		  {
+			  if(array_key_exists('menu', $this->values))
+			  {
+			  	$handler .= $this->values['menu'];
+			  	if(array_key_exists('mode', $this->values))
+			  		$handler .= "_".$this->values['mode'];
+			  }
+		  }
+		  return $handler;
+	  }
+} // end of HTLink class
+?>
+

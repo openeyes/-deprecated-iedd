@@ -1,0 +1,171 @@
+<?php
+
+//HTTable - revised 090805 AR Webster. Does a lot of the work for its child classes.Case safe also.
+
+abstract class HTTable implements HTTableInterface
+{
+    protected $unique; 				//record's unique identifier value
+    protected $data = array(); 		//assoc array of data - $data['forename'] = harry,
+    								//set in constructor and keys stored as lower case.
+    protected $fields = array(); 	//assoc array of fields and presentation - $fields['Forename'] = "Firstname"
+    								//key the same case as in the database fields. False if not displayed.
+    protected $dirty_data = array();//assoc array of fields that have been updated - lower case again.
+    								//Set true whenever __set() is called
+    protected $foreign_keys=array();//The fields => tables, that are foreign keys and so have to be validated
+    protected $database;			//HTDB_mySQL object - change if porting to another DBMS
+    protected $key_name; 			//name of the key field for this table - allows $this->key_name
+    protected $table_name; 			//just as it says.
+    const key = ""; 				//per class constant as above - allows HTclass::key
+    const table = ""; 				//per class constant as above
+    public function __construct($id=false)
+    {
+        $this->database= HTDB_MySQL::getInstance();
+        $this->unique= $id;
+        foreach($this->fields as $field=>$display)
+        	$this->data[strtolower($field)] = "";
+        if($id)
+        {
+               $this->get_data();
+        }
+    }
+    public function __set($var, $value)
+    {
+		$varlow = strtolower($var);
+        if(array_key_exists($varlow, $this->data) && ($this->data[$varlow] != $value))
+        {
+             $this->data[$varlow] = $value;
+             $this->dirty_data[$varlow] = true;
+        }
+    }
+    public function __get($var)
+    {
+		$varlow = strtolower($var);
+        if(array_key_exists($varlow, $this->data))
+			return $this->data[$varlow];
+		else if($varlow == strtolower($this->key_name))
+             return $this->unique;
+		else
+			return false;
+    }
+    public function get_unique() { return $this->unique;}
+    public function display() //display all data as unordered list <ul>
+    {
+        echo "\n<ul>";
+        $this->display_data();
+        echo "\n</ul>";
+    }
+    public function displayShort() { $this->display();} //child classes can overload this
+    public function addNew()//add new instance to database
+    {
+        if($this->unique)
+            throw new Exception("Attempted insertion of data already having unique id");
+		$this->validateForeignKeys();
+
+		//construct an insert query
+		$val_array = array(); $index = 0;//for the prepare()/execute() HTDB_MySQL
+		foreach($this->data as $key=>$value)
+		{
+			if($this->dirty_data[$key])
+			{
+				$query_field .= "$key, ";
+				array_push($val_array, $value); ++$index;
+				$query_val .= "':$index', ";
+			}
+		}
+		$query_val = HTUtils::term_str($query_val);
+		$query_field = HTUtils::term_str($query_field);
+		$query = "insert ".$this->table_name." ($query_field) values ($query_val)";
+		$this->database->prepare($query,"Failure to insert a ".$this->table_name." record");
+		$this->database->execute($val_array);
+		// get unique key value if table object has a uniqueid (diagnosis doesn't)
+		if($this->key_name)
+		{
+			  $query = "select max(".$this->key_name.") from ".$this->table_name;
+			  $this->database->prepare($query,"Failure getting unique key from".$this->table_name);
+			  $r = $this->database->execute();
+			  $row = $r->fetch_array();
+			  $this->unique = $row[0];
+		}
+    }
+    public function update() //update an existing record with all data from $this->data
+    {
+        if(!$this->unique)
+            throw new Exception("Attempted update of data when there is no unique id");
+
+		//construct update query
+		$this->validateForeignKeys();
+		$val_array = array(); $index = 0;//for the prepare(), execute() of HTDB_MySQL
+		$query = "update ".$this->table_name." set ";
+		foreach($this->data as $field => $data)
+		{
+			if($this->dirty_data[$field])
+			{
+				$mysqlvalue = $data ? $data : "NULL";
+				array_push($val_array, $mysqlvalue);$index++;
+				$query .= "$field=':$index', ";
+				$this->dirty_data[$field] = false;
+			}
+		}
+		if($index) //does anything need to be updated?
+		{
+			$query = HTUtils::term_str($query); //removes the last ", "
+			$query .= " where ".$this->key_name."=".$this->unique;
+			$this->database->prepare($query,"update query did not work in ".$this->table_name);
+			$this->database->execute($val_array);
+		}
+    }
+    public function delete() //delete all data from database
+    {
+		if(!$this->unique)
+			throw new Exception("Cannot delete as no id number available");
+		$query = "delete from ".$this->table_name." where ".$this->key_name."=".$this->unique;
+		$this->database->prepare($query, "unable to delete from ". $this->table_name);
+		$this->database->execute();
+   }
+    /////////////////////////////////
+    //private & protected functions//
+    /////////////////////////////////
+
+    protected function get_data() //and check that record with this key does exist
+    {
+        if(!$this->unique)
+            throw new Exception("Attempted retrieval of data when there is no unique id");
+
+        $query = "select * from ".$this->table_name." where ".$this->key_name." = ".$this->unique;
+        $r = $this->database->prepare($query, "failure to get data from ".$this->table_name." with id=".$this->unique)->execute();
+        if($r->num_rows() !=1)
+                  throw new Exception("No rows from get_data() query for ".$this->table_name);
+        $res_array = $r->fetch_assoc();
+        foreach($res_array as $data=>$display)
+        {
+			$this->data[strtolower($data)] = ($res_array[$data] == 'NULL')? "" : $res_array[$data];
+			$this->dirty_data[strtolower($data)] = false;
+		}
+    }
+    protected function display_data()
+    {
+		if($this->unique)
+			echo "\n<li>".$this->key_name." - ".$this->unique."</li>";
+		foreach($this->fields as $field=>$display)
+		{
+			$fieldlow = strtolower($field);
+			if($this->data[$fieldlow] && $this->data[$fieldlow] !='NULL' && $this->data[$fieldlow] !='N' && $display)
+				echo "\n<li>".$display." - ".$this->$field."</li>";
+		}
+	}
+	protected function validateForeignKeys(){
+		foreach($this->foreign_keys as $field => $table)
+		{
+			if($val = $this->data[strtolower($field)])
+			{
+				$query = "select * from $table where $field = $val";
+				$this->database->prepare($query);
+				$res = $this->database->execute();
+				if($res->num_rows() != 1)
+					throw new Exception("Unable to validate a foreign key in ".$this->table_name);
+			}
+		}
+	}
+} //end of HTtable
+
+?>

@@ -1,0 +1,12 @@
+<?php
+
+class HTMenuPatient extends HTMenu
+{
+	public function __construct(){
+			$this->addButton(new HTLink("Home", array("menu"=>"home"), "Go to root menu"));
+			$this->addButton(new HTLink("Patient Search", array("menu"=>"patient", "mode"=>"search"), "Patient search"));
+			$this->addButton(new HTLink("Patient New", array("menu"=>"patient", "mode" => "add"), "Add a patient"));
+	}
+}
+
+?>

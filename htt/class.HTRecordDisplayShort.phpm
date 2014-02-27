@@ -1,0 +1,16 @@
+<?php
+
+
+class HTRecordDisplayShort extends HTRecordDisplay
+{
+	public function __construct($class, $instance){
+		parent::__construct($class, $instance);
+	}
+	//override the displayIntance() function
+	protected function displayInstance(){
+		$this->HTTable_instance->displayShort();
+	}
+}
+
+
+?>

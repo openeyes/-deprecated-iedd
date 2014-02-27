@@ -1,0 +1,27 @@
+<?php
+
+abstract class HTHandler_priv extends HTHandler
+{
+	public function getPage() //overide this function
+	{
+		if($this->validate_user())
+			$this->constructPage();
+		else
+			$this->constructDenyPage();
+		return $this->page;
+	}
+	protected function validate_user(){
+		$event = substr(get_class($this), strlen("HTHandler_"));//get handler name from class name
+		//discard the last '_process' of handler name if there is one
+		$event = (substr_count($event,"_") == 2) ? substr($event,0,strrpos($event, "_")) : $event;
+		if (in_array($event, $_SESSION['AllowedHandlers']))
+			return true;
+		return false;
+	}
+	protected function constructDenyPage(){
+		$this->page->setMenu(new HTMenuHome());
+		$this->page->setTitle("Unable to process request");
+		$this->page->addComponent(new HTString("You attempted to do something you're not allowed to do!"));
+	}
+} //end of HTHandler_priv
+?>

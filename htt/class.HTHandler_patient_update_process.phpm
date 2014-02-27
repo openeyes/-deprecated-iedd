@@ -1,0 +1,32 @@
+<?php
+class HTHandler_patient_update_process extends HTHandler_priv
+{
+	private $HTTable;
+	public function constructPage(){
+        try
+        {
+			$this->HTTable = new HTTableSubject($_REQUEST['subjectid']);
+			$this->getRequestData();
+            $this->HTTable->update();
+            $this->page->addComponent(new HTString("The following record has just been updated."));
+            $this->page->addComponent(new HTRecordDisplay("HTTableSubject", $this->HTTable));
+            $_REQUEST['menu'] = 'patient'; $_REQUEST['mode'] = 'display'; //to inactivate the button of the menu
+            $this->page->setMenu(new HTMenuPatientSpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that record"));
+            $this->page->setMenu(new HTMenuPatient());
+        }
+	}
+
+    protected function getRequestData()
+    {
+	    $_REQUEST['dob'] = HTUtils::date_en_mysql($_REQUEST['dob']);
+        foreach($_REQUEST as $key=>$value)
+            $this->HTTable->$key = $value;
+        $this->HTTable->lastupdatedby = $_SESSION['realname'];
+    }
+
+}//end of HTHandler_patient_process_update
+?>

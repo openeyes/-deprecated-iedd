@@ -1,0 +1,51 @@
+<?php
+class HTFormTableSample extends HTForm
+{
+	private $httable; // a HTTable object
+	private $mode;
+    public function __construct($id=false)
+    {
+        $this->httable = new HTTableSample($id);
+	    $this->mode = $_REQUEST['mode'];
+    }
+    public function display()
+    {
+        $extractedby_array = array(''=>'','Bev'=>'Bev', 'Naushin'=>'Naushin', 'Shomi'=>'Shomi!!!');
+        $type_array = array(''=>'', 'blood'=>'Blood', 'buccal'=>'Buccal swab','DNA'=>'DNA pre-extracted', 'other'=>'Other (see comments)');
+        $record = array(
+            new HTControlTextbox('DNA&nbsp;number','dnano', '', true),
+            //new HTControlTextbox('Subject&nbsp;ID', 'subjectid', $_REQUEST['subjectid'], true),
+            new HTControlTextbox('Date&nbsp;sample&nbsp;taken  (dd-mm-yyyy)', 'bloodtaken', date("d-m-Y"), false),
+            new HTControlSelect('Type&nbsp;of&nbsp;sample','type',$type_array, 'blood'),
+            new HTControlTextarea("Comments", 'comment','', false)
+            );
+            if($this->mode == 'update')//populate the controls
+            {
+                foreach($record as $r)
+                {
+                    $prop = $r->get_name() ;
+                    if($prop == 'bloodtaken' || $prop == 'extracted' )
+                        $r->set_value(HTUtils::date_mysql_en($this->httable->$prop));
+                    else
+                        $r->set_value($this->httable->$prop);
+                }
+            }
+            echo "\n<form method='post' action='".$SERVER['PHP_SELF']."' onSubmit=' return validate_sample(this);'>";
+            echo "\n<input type='hidden' name='menu' value='sample' />";
+            echo "\n<input type='hidden' name='mode' value='$this->mode"."_process' />";
+            echo "\n<input type='hidden' name='subjectid' value='".$_REQUEST['subjectid']."' />";
+            echo "\n<input type='hidden' name='loggedby' value='".$_SESSION['realname']."' />";
+            echo "\n<table border='1' cellpadding='3'>";
+            foreach($record as $r)
+            {
+                  echo "\n<tr>";
+                  $r->display(true);
+                  echo "</tr>";
+            }
+            echo "\n<tr><td colspan='2' align='center'><input type='submit' value='".strtoupper($this->mode)."' />";
+            echo "</td></tr>";
+            echo "\n</table>";
+            echo "\n</form>";
+    }
+}
+?>

@@ -1,0 +1,32 @@
+<?php
+class HTControlTextarea extends HTControl
+{
+	protected $readonly;
+	protected $cols;
+	protected $rows;
+	protected $value; //this will be the text between the <textarea>..</textarea> tags
+	protected $wrap= 'soft';
+
+	//functions
+	public function __construct($label, $name, $value="", $readonly=false, $cols="20", $rows = "3"){
+		parent::__construct($label, $name);
+		$this->value = $value;
+		$this->readonly = $readonly;
+		$this->cols = $cols;
+		$this->rows = $rows;
+	}
+	public function set_value($v){$this->value = $v;}
+	public function set_readonly($ro){$this->readonly = $ro;}
+	public function set_rows($r){$this->rows = $r;}
+	public function set_cols($c){$this->cols = $c;}
+	public function display($table){
+		$this->table = $table;
+		$display = $this->table? "<td align='right'>".$this->label."&nbsp;</td><td align='left'>" : $this->label."&nbsp;";
+		$display .= "<textarea name='".$this->name."' cols='".$this->cols."' rows='".$this->rows."' wrap='".$this->wrap."'";
+		$display .= $this->readonly? " readonly='true'" : "";
+		$display .= ">$this->value</textarea>";
+		$display .= $this->table? "</td>" : "";
+		echo $display;
+	}
+}
+?>

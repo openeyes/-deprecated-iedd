@@ -1,0 +1,11 @@
+<?php
+
+class HTHandler_family_search extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormSearchFamily());
+		$this->page->setMenu(new HTMenuFamily());
+	}
+}
+
+?>

@@ -1,0 +1,108 @@
+<?php
+
+class HTHandler_assay_display extends HTHandler_priv
+{
+	//called with menu = assay, mode = display
+	//displays experiment data in repsonse to a search, a list requery or single id
+	//receives the following data from the HTFormSearchAssay class:
+	//form one - subjectid
+	//form two - newgc number
+	//form three - diagnosis, geneid, assay, effect
+	private $arg_array = array(); //an array to hold arguments for the DB_MySQL::prepare() function
+	//which elements of assay to display in a list
+	private $selectStr =
+	"assay.testid, assay.subjectid, genelist.gene, assay.assay, assay.basechange, assay.aminoacidchange, assay.resultdate, assay.effect ";
+	public function constructPage(){
+		if($_REQUEST['testid'])
+		{
+			$assay = new HTTableAssay($_REQUEST['testid']);
+			$subject = new HTTableSubject($assay->subjectid);
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", $subject));
+			$this->page->addComponent(new HTRecordDisplay("HTTableAssay", $assay));
+			$this->page->setMenu(new HTMenuAssaySpecific());
+		}
+		else if($_REQUEST['requery'] == 'true') // a call from a list
+		{
+			$this->makeListPage();
+		}
+		else if($subid = $_REQUEST['subjectid'])
+		{
+			$subject = new HTTableSubject($subid);
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", $subject));
+			$query = "select $this->selectStr from assay, genelist where genelist.geneid=assay.geneid and subjectid=$subid";
+			$this->makeListPage($query);
+		}
+		else if($newgc = $_REQUEST['newgc'])
+		{
+			$ped= new HTTableFamily($newgc);
+			$this->page->addComponent(new HTRecordDisplayShort("HTTableFamily", $ped));
+			$query = "select $this->selectStr from assay, genelist, subject ";
+			$query .= "where genelist.geneid=assay.geneid and assay.subjectid=subject.subjectid and subject.newgc=$newgc";
+			$this->makeListPage($query);
+		}
+		else if($_REQUEST['diagnosis'] || $_REQUEST['geneid'] || $_REQUEST['assay'] || $_REQUEST['effect'])
+		{
+			$query = $this->constructQuery();
+			$query = HTDB_MySQL::bindQuery($query,$this->arg_array);
+			$this->makeListPage($query);
+		}
+		else
+		{
+			$this->makeDefaultPage();
+		}
+	}
+
+	private function constructQuery()//constructs family search query from $_REQUEST
+    {
+		$index = 0; //for :1, :2 ... arguments to DB_MySQL::prepare() function
+		//We will have data on diagnosis, geneid, consanguinity, moldata
+		//(1) select clause
+		$query =  "select $this->selectStr from assay, genelist ";
+		if($d = $_REQUEST['diagnosis'])
+			$query .= ",diagnosis ";
+		$query .= " where assay.geneid=genelist.geneid and ";
+		if($d)
+			$query .= "diagnosis.subjectid=assay.subjectid and ";
+		if($d)
+		{
+			array_push($this->arg_array, $d); $index++;
+			$query .= "diagnosis = ':$index' and ";
+		}
+		if($g = $_REQUEST['geneid'])
+		{
+			array_push($this->arg_array, $g); $index++;
+			$query .= "assay.geneid = ':$index' and ";
+		}
+		if($a = $_REQUEST['assay'])
+		{
+			array_push($this->arg_array, $a); $index++;
+			$query .= "assay like '%:$index%' and ";
+		}
+		if($e = $_REQUEST['effect'])
+		{
+			array_push($this->arg_array, $e); $index++;
+			$query .= "assay.effect = ':$index' and ";
+		}
+
+		$query = HTUtils::term_str($query, 5);
+		return $query;
+	}
+
+
+	private function makeListPage($query=""){
+			$this->page->setMenu(new HTMenuAssay());
+			$this->page->addComponent(
+				new HTList(
+				"menu=assay&mode=display",
+				array('subjectid'=>'menu=patient&mode=display&subjectid=','testid'=> 'menu=assay&mode=display&testid='
+					),
+				$query
+			));
+	}
+	private function makeDefaultPage(){
+		$this->page->setMenu(new HTMenuAssay());
+		$this->page->addComponent(new HTString("Cannot find that experiment"));
+	}
+
+} // end of HTHandler_assay_display class
+?>

@@ -1,0 +1,21 @@
+<?php
+class HTMenuPatientSpecific extends HTMenuPatient
+{
+	public function __construct(){
+		parent::__construct();
+		if(isset($_REQUEST['subjectid'])) //only add these if a specific patient has been requested
+		{
+			$id = $_REQUEST['subjectid'];
+			$this->addButton(new HTLink("Patient Update",
+				array("menu"=>"patient", "mode" => "update", "subjectid"=> $id),
+				"Update patient details"));
+			$this->addButton(new HTLink("Patient Details",
+				array("menu"=>"patient", "mode" => "display", "subjectid"=> $id),
+				"Display patient details"));
+			$this->addButton(new HTLink("Login Sample",
+				array("menu"=>"sample", "mode" => "add", "subjectid" => $id),
+				"Login a patient sample"));
+		}
+	}
+}
+?>

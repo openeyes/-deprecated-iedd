@@ -1,0 +1,27 @@
+<?php
+
+class HTRecordDisplay implements HTWebComponent
+//displays a single instance of a HTTable object
+{
+	protected $HTTable_instance;
+	public function __construct($class, $instance)
+	{
+		$this->HTTable_instance = class_exists($class)? $instance: false;
+	}
+	public function display(){
+		if($this->HTTable_instance && $this->HTTable_instance->get_unique())//does it have data in it?
+		{
+			echo "\n<table align='center' border='0'><tr><td align='left'>\n";
+			$this->displayInstance();
+			echo "\n</td></tr></table>\n";
+		}
+		else
+			echo "<p>Unable to display this record</p>";
+	}
+	protected function displayInstance(){
+		$this->HTTable_instance->display();
+	}
+
+}
+?>
+

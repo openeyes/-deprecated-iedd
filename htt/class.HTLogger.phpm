@@ -1,0 +1,41 @@
+<?php
+
+class HTLogger
+{
+	private $hlogfile;
+	private $logfilepath ="../httlogs/httlog.txt";
+
+	private function __construct(){
+		$this->hlogfile = @fopen($this->logfilepath, 'a+');
+		if(!is_resource($this->hlogfile))
+			throw new Exception("The specified log file $this->logfilepath could not be opened");
+	}
+
+	public function __destruct(){
+		if(is_resource($this->hlogfile))
+			fclose($this->hlogfile);
+	}
+
+	public static function getInstance(){
+		static $thisobj;
+		if(!isset($thisobj))
+			$thisobj = new HTLogger();
+		return $thisobj;
+	}
+	public function setLastLogin(){
+		$query="update person set lastlogin='".date("Y-m-d H:i:s");
+		$query .= "', lasthost='".$_SERVER['REMOTE_ADDR']."' where user='".$_SESSION['user']."'";
+		$db=HTDB_MySQL::getInstance();
+		$db->prepare($query);
+		$db->execute();
+	}
+	public function logEvent(){
+		$logline = $_SESSION['realname']."\t".$_SERVER['REMOTE_ADDR']."\t".date("Y-m-d H:i:s");
+		foreach($_REQUEST as $field => $data)
+			$logline .="\t$field: $data";
+		$logline .="\n";
+		fwrite($this->hlogfile, $logline);
+	}
+}
+
+?>

@@ -1,0 +1,158 @@
+<?php
+
+class HTHandler_patient_display extends HTHandler_priv
+{
+	//called with menu = patient, mode = display
+	//displays sample data in repsonse to a search, a list requery or single id
+	private $arg_array = array(); //an array to hold arguments for the DB_MySQL::prepare() function
+	public function constructPage(){
+		if($_REQUEST['requery'] == 'true') // a call from a list
+		{
+			$this->makeListPage();
+		}
+		else if($_REQUEST['subjectid'])
+		{
+			$this->makePatientPage($_REQUEST['subjectid']);
+		}
+		else if(isset($_REQUEST['mehno']))//do all this in case there are two folks sharing same meh no
+		{
+			//execute query
+			$query = $this->constructQuery();
+			$db = HTDB_MySQL::getInstance();
+			$db->prepare($query);
+			try
+			{
+				$res = $db->execute($this->arg_array);
+				$rows = $res->num_rows();
+				switch ($rows)
+				{
+					case 0:
+						$this->makeDefaultPage();
+						break;
+					case 1:
+						$assoc_array = $res->fetch_assoc();
+						$id = $assoc_array['SubjectID'];
+						$this->makePatientPage($id);
+						break;
+					default:
+						$query = HTDB_MySQL::bindQuery($query,$this->arg_array);
+						$this->makeListPage($query);
+						break;
+				}
+			}
+			catch(Exception $e)
+			{
+				$this->makeDefaultPage();
+			}
+		}
+		else if($_REQUEST['forename'] || $_REQUEST['surname'] || $_REQUEST['dob'] || $_REQUEST['diagnosis'] || $_REQUEST['newgc'] )
+		{
+			$query = $this->constructQuery();
+			$query = HTDB_MySQL::bindQuery($query,$this->arg_array);
+			$this->makeListPage($query);
+		}
+		else
+		{
+			$this->makeDefaultPage();
+		}
+	}
+
+	private function constructQuery()//constructs patient search query from $_REQUEST
+    {
+		$index = 0; //for :1, :2 arguments to DB_MySQL::prepare() function
+		//first the select clause...
+		$select =  "select subject.subjectid as 'SubjectID', subject.forename as 'First', ";
+		$select .= "subject.initial as 'Initial', subject.surname as 'Surname', ";
+		$select .= "subject.maiden as 'Maiden', subject.dob as 'BirthDate', subject.yob as 'Year', ";
+		$select .= "subject.mehno as 'MEH', subject.status as 'Status', subject.newgc as 'Family' ";
+
+		//next the from clause - which tables to include
+		$from = " from subject";
+		if($_REQUEST['diagnosis'])
+		{
+			$from .= ", diagnosis";
+		}
+		//next the where clause
+		$where = " where ";
+		if($mehno = $_REQUEST['mehno'])
+		{
+			array_push($this->arg_array, $mehno); $index++;
+			$where .= " subject.mehno=':$index' and";
+		}
+		if($diagnosis = $_REQUEST['diagnosis'])
+		{
+			array_push($this->arg_array, $diagnosis); $index++;
+			$where .= " diagnosis.subjectid=subject.subjectid and diagnosis = ':$index' and";
+		}
+		if($newgc = $_REQUEST['newgc'])
+		{
+			array_push($this->arg_array, $newgc); $index++;
+			$where .= " subject.newgc=':$index' and";
+		}
+		if($fore = $_REQUEST['forename'])
+		{
+			array_push($this->arg_array, $fore); $index++;
+			if($_REQUEST['rd_forename'] == 'part')
+				$where .= " forename like '%:$index%' and";
+			else
+				$where .= "  forename=':$index' and";
+		}
+		if($sur = $_REQUEST['surname'])
+		{
+			array_push($this->arg_array, $sur); $index++;
+			if($_REQUEST['rd_surname'] == 'part')
+				$where .= " surname like '%:$index%' and";
+			else
+				$where .= " surname=':$index' and";
+		}
+		if($age = $_REQUEST['dob'])
+		{
+			$index++;
+			if($_REQUEST['rd_dob'] == 'age')
+			{
+				array_push($this->arg_array, $age);
+				$where .= " ((year(curdate()) - subject.yob = ':$index') or (year(curdate()) - subject.yob = ':$index' + 1) ";
+				$where .= "or (year(curdate()) - year(subject.dob) = ':$index') or (year(curdate()) - year(subject.dob) = ':$index' + 1)) and";
+			}
+			else
+			{
+				$age = HTUtils::date_en_mysql($age);
+				array_push($this->arg_array, $age);
+				$where .= " dob = ':$index' and";
+			}
+		}
+		//remove terminal ' and'
+		$where = HTUtils::term_str($where, 4);
+		return $select.$from.$where;
+	}
+
+	private function makePatientPage($subid)
+	{
+		try
+		{
+			$subject = new HTTableSubject($subid);
+			$this->page->addComponent(new HTRecordDisplay("HTTableSubject", $subject));
+			$this->page->setMenu(new HTMenuPatientSpecific());
+		}
+		catch(Exception $e)
+		{
+			$this->makedefaultPage();
+		}
+	}
+	private function makeListPage($query=""){
+			$this->page->setMenu(new HTMenuPatient());
+			$this->page->addComponent(
+				new HTList(
+				"menu=patient&mode=display",
+				array('SubjectID'=> 'menu=patient&mode=display&subjectid=',
+					'Family' =>'menu=family&mode=display&newgc='),
+				$query
+			));
+	}
+	private function makeDefaultPage(){
+		$this->page->setMenu(new HTMenuPatient());
+		$this->page->addComponent(new HTString("Cannot find that person"));
+	}
+
+} // end of HTHandler_patient_display class
+?>

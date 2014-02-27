@@ -1,0 +1,17 @@
+<?php
+
+class HTHandler_sample_add extends HTHandler_priv
+{
+	private $HTTable;
+	public function __construct()
+	{
+		parent::__construct();
+		$this->HTTable = new HTTableSubject($_REQUEST['subjectid']);
+	}
+	public function constructPage(){
+		$this->page->addComponent(new HTRecordDisplay("HTTableSubject", $this->HTTable));
+		$this->page->addComponent(new HTFormTableSample());
+		$this->page->setMenu(new HTMenuPatient());
+	}
+}
+?>

@@ -1,0 +1,301 @@
+<?php
+class HTTableSubject extends HTTable
+{
+    //Things you can and cannot do with this class. By instantiating a class with a subjectid
+    //you can gather all info from subject table, freetext field from subjectextra table,
+    //diagnosis info from diagnosis table. All this data can be updated (meaning changed).
+    //You can also read (only) a string of addresses on which DNA is stored.
+    const key = "subjectid";
+    const table = "subject";
+    protected $fields = array(
+        "forename" => "First name",
+        "initial" => "Initial",
+        "surname" => "Surname",
+        "maiden" => "Maiden",
+        "dob" => "DOB",
+        "yob" => "Birth Year",
+        "gender" => "Gender",
+        "mehno" => "MEH No.",
+        "status" => "Status",
+        "newgc" => "Pedigree No."
+        );
+    private $diag_array = array();	//of strings of diagnoses
+    private $dirty_diagnosis; 		//is diagnois data outofdate?
+    private $_samples;				//relates to a one->many->many subject->sample->address,
+                      				//only used for display not update/addNew. Hence, a 'dirty' property is unnecessary
+    private $_text;					//relates to the  Free_text field in table subjectextra
+    private $dirty_text;
+
+			//////////////////////
+			// public functions //
+			//////////////////////
+
+    public function __construct($id = false)
+    {
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id); 	//will call get_data()
+        if($id)
+        {
+            $this->get_diagnosis_from_database(); $this->set_sample(); $this->set_text();
+        }
+    }
+    public function displayShort()
+    {
+        // a print friendly summary of a record from this class
+        $str = "";
+        if($this->data)
+        {
+            $str .= "ID: ".$this->unique." ";
+            $str .= $this->forename? strtoupper($this->forename) : strtoupper($this->initial);
+            $str .= " ".strtoupper($this->surname)." Pedigree: ".$this->newgc;
+            $str .= $this->diagnosis ? (" Diagnosis: ".$this->diagnosis) : "";
+        }
+        echo "<p>$str</p>";
+    }
+    public function __set($var, $value) //cannot set samples/addresses
+    {
+        parent::__set($var, $value);
+        switch(strtolower($var))
+        {
+            case "diagnosis" : $this->set_diagnosis_from_string($value); $this->dirty_diagnosis = true; break;
+            case "text" : if($this->_text != $value){$this->_text = $value;$this->dirty_text=true;} break;
+            case "newgc": $this->validate_newgc(); break; //even if this is "" - which will then generate a new one.
+            default : /*do nothing */ break;
+        }
+    }
+    public function __get($var)
+    {
+        $retval = parent::__get($var);
+        switch(strtolower($var))
+        {
+            case "diagnosis" : $retval = $this->format_diagnoses(); break;
+            case "text" : $retval = $this->_text; break;
+            case "samples" : $retval = $this->_samples; break;
+            default : break;
+        }
+        return $retval;
+    }
+    public function addNew() 	//adds this patient to database
+    {
+		parent::addNew(); 		//inserts all into subject table and assigns to $this->unique
+								//insert free_text
+		if($this->text != "" )
+		{
+			$query = "insert subjectextra (".HTTableSubject::key.", free_text) values (";
+			$query .= $this->unique.", ':1')";
+			$this->database->prepare($query);
+			$this->database->execute($this->text);
+			$this->dirty_text = false;
+		}
+		//do diagnoses here
+		foreach($this->diag_array as $d)
+		{
+			if($d)
+			{
+				$diag_obj = new HTTableDiagnosis();
+				$diag_obj->subjectid = $this->unique;
+				$diag_obj->diagnosis = $d;
+				$diag_obj->addNew();
+			}
+		}
+		$this->dirty_diagnosis = false;
+		//once a new person is added, we need to update the pedigree table record to reflect the new number
+		//of family members and possibly a new diagnosis
+		$family = new HTTableFamily($this->newgc);
+		$family->updateNewMember();
+    }
+    public function update()
+    {
+		//update data in table subject
+		parent::update();
+		//update data in table subjectextra - the free_text field
+		if($this->dirty_text)
+		{
+			$query = "select ".HTTableSubject::key." from subjectextra where ".HTTableSubject::key."=".$this->unique;
+			$this->database->prepare($query);
+			$r = $this->database->execute();
+			if($r->num_rows() == 0)//subjectid not in subjectextra database
+				$query="insert subjectextra (".HTTableSubject::key.",free_text) values(".$this->unique.",':1')";
+			else
+				$query = "update subjectextra set free_text=':1' where ".HTTableSubject::key."=".$this->unique;
+			$this->database->prepare($query);
+			$this->database->execute($this->text);
+			$this->dirty_text = false;
+		}
+		//update diagnoses, delete them first
+		if($this->dirty_diagnosis)
+		{
+			$query="delete from ".HTTableDiagnosis::table." where ".HTTableSubject::key."=".$this->unique;
+			$this->database->prepare($query);
+			$this->database->execute();
+			foreach($this->diag_array as $d)
+			{
+				if($d)
+				{
+					$diag_obj = new HTTableDiagnosis();
+					$diag_obj->subjectid = $this->unique;
+					$diag_obj->diagnosis = $d;
+					$diag_obj->addNew();
+				}
+			}
+			$this->dirty_diagnosis = false;
+		}
+		//once a new person is updated, we need to update the pedigree table record to reflect the new number
+		//of family members and possibly a new diagnosis
+		$family = new HTTableFamily($this->newgc);
+		$family->updateNewMember();
+    }
+    public function delete()
+    {
+        //delete entries in subject and subjectextra tables
+        $subid = $this->unique;
+        parent::delete();
+        $query = "delete from subjectextra where subjectid=$subid";
+        $this->database->prepare($query);
+        $this->database->execute();
+        //delete diagnoses
+        $query = "delete from diagnosis where subjectid=$subid";
+        $this->database->prepare($query);
+        $this->database->execute();
+        //delete samples and addresses
+        //first get sample list
+        $query = "select dnano from sample where subjectid=$subid";
+        $this->database->prepare($query);
+        $r=$this->database->execute();
+        $i=0;
+        $dnano = array();
+        while($rs = $r->fetch_array())
+                  $dnano[$i++] = $rs[0];
+        //foreach dnano set the address.dnano to null and delete dnano from sample
+        foreach($dnano as $d)
+        {
+            $query="update address set dnano=null where dnano=$d";
+            $this->database->prepare($query);
+            $this->database->execute();
+
+            $query="delete from sample where dnano=$d";
+            $this->database->prepare($query);
+            $this->database->execute();
+        }
+        //if there are no more individuals in pedigree - delete pedigree too.
+        $pedno = $this->newgc;
+        $query="select count(*) from subject where newgc=$pedno";
+        $this->database->prepare($query);
+        $r = $this->database->execute();
+        //print_r($res);
+        $array= $r->fetch_array();
+        if($array[0] == 0)//there are no further members in the pedigree
+        {
+            //delete pedigree number from pedigree table
+            $query="delete from pedigree where newgc=$pedno";
+            $this->database->prepare($query);
+            $this->database->execute();
+        }
+        else
+        {
+			//call updateNewMember on pedigree to revise affecteds, members, diagnosis fields
+			$family = new HTTableFamily($pedno);
+			$family->updateNewMember();
+		}
+    }
+    		//////////////////////////
+    		//  protected functions //
+    		//////////////////////////
+
+     protected function display_data()
+     {
+         parent::display_data();
+         if($t = $this->text)
+            echo "\n<li>comments - $t</li>";
+         if($d = $this->diagnosis)
+            echo "\n<li>diagnosis - $d</li>";
+         else
+            echo "\n<li>diagnosis - None listed.</li>";
+         if ($s = $this->samples)
+            echo "\n<li>DNA - $s</li>";
+         else
+            echo "\n<li>DNA - None in the laboratory</li>";
+     }
+
+    		//////////////////////////
+    		//  private functions   //
+    		//////////////////////////
+    private function set_sample()
+    {
+        //get a string into $this->_samples
+        $query = "select sam.dnano, concat(a.box, '/', a.letter, a.number) from ".HTTableSubject::table." as sub, ";
+        $query .= HTTableSample::table." as sam left join ".HTTableAddress::table." as a on ";
+        $query .="sam.".HTTableSample::key."=a.".HTTableSample::key;
+        $query .=" where sub.".HTTableSubject::key."= sam.".HTTableSubject::key." and sub.".HTTableSubject::key;
+        $query .="=".$this->unique;
+        $this->database->prepare($query);
+        $r = $this->database->execute();
+        $sampleno=0; $str=''; $address='';
+        while($row = $r->fetch_array($res))
+        {
+			$address = ($row[1])? $row[1] : " not extracted.";
+			if($row[0] != $sampleno)
+			{
+				$str .= " $row[0]: $address";
+				$sampleno=$row[0];
+			}
+			else
+				$str .= ", $address";
+		}
+        $this->_samples = $str;
+    }
+    private function set_diagnosis_from_string($str)
+    {
+             $this->diag_array = explode(", ",$str);
+    }
+    private function get_diagnosis_from_database()
+    {
+            //sets the diagnosis array from the database
+            //first clear the array
+            foreach($this->diag_array as $element)
+            	unset($element);
+            $query="select subjectid, diagnosis from ".HTTableDiagnosis::table." where ";
+            $query .=HTTableSubject::key."=".$this->unique;
+            $this->database->prepare($query);
+            $r = $this->database->execute();
+            while($row = $r->fetch_array())
+            {
+                array_push($this->diag_array, $row['diagnosis']);
+            }
+            $this->dirty_diagnosis = false;
+    }
+    private function set_text(){
+            $query="select free_text from subjectextra where ".HTTableSubject::key."=".$this->unique;
+            $this->database->prepare($query);
+            $r = $this->database->execute();
+            $row=$r->fetch_array();
+            $this->_text=$row[0];
+            $this->dirty_text = false;
+    }
+    private function format_diagnoses() //turn the diagnosis array into a readable string
+    {
+        return implode(", ",$this->diag_array);
+    }
+    private function validate_newgc()
+    {
+        //checks to ensure that newgc is in pedigree table otherwise throws HTException_newgc
+        if(!$this->newgc)
+        {
+            //assign a new one
+            $ped = new HTTableFamily();
+            $ped->addNew();
+            $this->data['newgc'] = $ped->newgc;
+            $this->dirty_data['newgc'] = true;
+        }
+        else
+        {
+            $query = "select * from pedigree where newgc=".$this->newgc;
+            $this->database->prepare($query);
+            $r = $this->database->execute();
+            if($r->num_rows() !=1)
+                  throw new HTException_newgc();
+        }
+    }
+} //end of HTTableSubject
+?>

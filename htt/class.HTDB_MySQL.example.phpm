@@ -1,0 +1,82 @@
+<?php
+
+class HTDB_MySQL implements HTDBInterface {
+    protected $dbh;
+    protected $query;
+    protected $error_msg;
+    private function __construct(){// Singleton pattern use HTDB_MySQL::getInstance()
+		   $this->user = "iedd";
+           $this->pass = "password";
+           $this->dbhost = "localhost";
+           $this->dbname= "iedd";
+           $this->connect();
+           }
+    public static function getInstance(){
+		static $HTDB;
+		if(!isset($HTDB))
+			$HTDB = new HTDB_MySQL();
+		return $HTDB;
+    }
+    private function connect()
+    {
+        if(!($this->dbh = mysql_pconnect($this->dbhost,$this->user,$this->pass)))
+                        throw new Exception("Cannot connect to database with given username password");
+        if(!mysql_select_db($this->dbname,$this->dbh))
+                        throw new Exception("Cannot open ".$this->dbname."@".$this->dbhost);
+    }
+
+    public function prepare($query, $error_msg = "")
+    {
+        $this->query= $query;
+        $this->error_msg = $error_msg ? $error_msg : "Unable to run query in HTDB_MySQL::execute()";
+        return $this; //allows $res = $db->prepare($query)->execute()
+    }
+    public function execute()
+    {
+        $binds = func_get_args();
+        //DEBUG here
+        //echo $this->query."</br>";
+        $this->query = self::bindQuery($this->query, $binds);
+        //DEBUG here
+        //echo $this->query."</br>";
+        if(!($result= mysql_query($this->query,$this->dbh)))
+              throw new Exception($this->error_msg);
+        else
+        {
+              $return_mysql=  new HTResult_MySQL($result);
+              return $return_mysql;
+        }
+   }
+   static public function bindQuery($query, $binds)//can be called from outside
+   {
+		// a note about this. The query string delivered to prepare() may contain :1, :2 words
+		// if so they are replaced in order with the arguments to execute().
+		// This enables there to be one place where the arguments can be escaped.
+		//Need to do this backwards so as to replace :10 before :1. This was a subtle bug to find.
+        $index=0;
+        $bindarray = array();
+        foreach($binds as $p)
+        {
+			if(is_array($p))
+			{
+				foreach($p as $param)
+				{
+					array_push($bindarray, $param);
+				}
+			}
+			else
+			{
+					array_push($bindarray, $p);
+			}
+		}
+		for($i= count($bindarray); $i > 0; --$i)
+		{
+			         $query = str_replace(":".$i, mysql_escape_string($bindarray[$i-1]), $query);
+		}
+
+		//finally transform ='NULL' into =NULL
+		$query = str_replace("'NULL'", "NULL", $query);
+		return $query;
+	}
+}//end of HTDB_MySQL class
+?>

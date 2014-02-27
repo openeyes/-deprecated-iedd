@@ -1,0 +1,53 @@
+<?php
+class HTTableAddress extends HTTable
+// a class to map to the address table of the MySQL database
+{
+    const key = "keyaddress";
+    const table = "address";
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+    }
+    protected $fields = array(
+            "DNANo" => "DNA No",
+            "box" => "Box",
+            "letter" => "Letter",
+            "number" => "Number",
+            "extracted" => "Extraction date",
+            "extractedby" => "Extracted by",
+            "comment" => "Comment");
+    public function update(){
+        $this->validate();
+        parent::update();
+    }
+    public function addNew(){
+        $this->validate();
+        parent::addNew();
+    }
+    public function format()
+    {
+        return $this->data ? $this->box."/".$this->letter.$this->number : "";
+    }
+
+    //privates...
+
+    private function validate()
+    {
+        //ensures update/delete does not occur on address already in use
+        if(!($b=$this->box) || !($n=$this->number) || !($l=$this->letter))
+               throw new Exception("Invalid address ".$this->format());
+        $query = "select ".HTTableAddress::key." from ".HTTableAddress::table;
+        $query .=" where box=':1' and letter=':2' and number=':3'";
+        $this->database->prepare($query);
+        if(!($res=$this->database->execute($b,$l,$n)) || $res->num_rows() > 0)
+               throw new Exception("Attempt to add a DNA address when already taken");
+        //ensure dnano exists in sample table
+        $query = "select * from sample where dnano=':1'";
+        $this->database->prepare($query);
+        if(!($res=$this->database->execute($this->dnano)) || $res->num_rows() == 0)
+               throw new Exception("Attempt to add a DNA address when sample DNA number does not exist");
+    }
+
+}//end of HTTableAddress class
+?>

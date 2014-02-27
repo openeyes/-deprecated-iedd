@@ -1,0 +1,44 @@
+<?php
+
+class HTHandler_assay_add_process extends HTHandler_priv
+{
+	private $httable; //an HTTableSubject object
+	public function __construct(){
+		parent::__construct();
+		$this->httable = new HTTableAssay();
+	}
+	public function constructPage(){
+		$this->getRequestData();
+        try
+        {
+            $this->httable->addNew();
+            $sub = new HTTableSubject($this->httable->subjectid);
+            $this->page->addComponent(new HTString("The following record has just been added."));
+            $this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", $sub));
+            $this->page->addComponent(new HTRecordDisplay("HTTableAssay", $this->httable));
+            $_REQUEST['testid'] = $this->httable->get_unique(); //otherwise testid not transmitted
+            $_REQUEST['menu'] = 'assay';$_REQUEST['mode'] = 'display';//inactivates correct menu button
+            $this->page->setMenu(new HTMenuAssaySpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that experiment - ".$e->getMessage()));
+            $this->page->setMenu(new HTMenuAssay());
+        }
+	}
+
+    protected function getRequestData()
+    {
+		$_REQUEST['resultdate'] = HTUtils::date_en_mysql($_REQUEST['resultdate']);
+        foreach($_REQUEST as $key=>$value)
+            $this->httable->$key = $value;
+        $this->httable->enteredby = $_SESSION['realname'];
+    }
+
+}
+
+
+
+
+
+?>

@@ -1,0 +1,12 @@
+<?php
+
+class HTMenuSample extends HTMenu
+{
+	public function __construct(){
+			$this->addButton(new HTLink("Home", array("menu"=>"home"), "Go to root menu"));
+			$this->addButton(new HTLink("Sample Search", array("menu"=>"sample", "mode"=>"search"), "Sample search"));
+	}
+}
+
+
+?>

@@ -1,0 +1,35 @@
+<?php
+class HTHandler_sample_add_process extends HTHandler_priv
+{
+	private $HTTable; //an HTTableSubject object
+	public function __construct(){
+		parent::__construct();
+		$this->HTTable = new HTTableSample();
+	}
+	public function constructPage(){
+		$this->getRequestData();
+        try
+        {
+            $this->HTTable->addNew();
+            if($id = $_REQUEST['subjectid'])
+            	$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", new HTTableSubject($id)));
+            $this->page->addComponent(new HTString("The following sample has just been logged."));
+            $this->page->addComponent(new HTRecordDisplay("HTTableSample", $this->HTTable));
+            $this->page->setMenu(new HTMenuPatientSpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that record"));
+            $this->page->setMenu(new HTMenuPatient());
+        }
+	}
+
+	protected function getRequestData()
+	{
+	    $_REQUEST['bloodtaken'] = HTUtils::date_en_mysql($_REQUEST['bloodtaken']);
+        foreach($_REQUEST as $key=>$value)
+            $this->HTTable->$key = $value;
+	}
+}//end of HTHandler_sample_process_add class
+
+?>

@@ -1,0 +1,13 @@
+<?php
+
+class HTHandler_family_update extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormTableFamily($_REQUEST['newgc']));
+		$this->page->setMenu(new HTMenuFamilySpecific());
+	}
+}
+
+
+
+?>

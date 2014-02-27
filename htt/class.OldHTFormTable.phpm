@@ -1,0 +1,50 @@
+<?php
+//HTFormTable - a class to manage a form that complements a database object such as subject,
+//sample, gene, pedigree. It both displays and handles input data.
+abstract class HTFormTable extends HTForm
+{
+      protected $httable; //HTtable object
+      protected $mode;
+      public function request($mode)//$mode is either add, update, process_add, process_update
+      {
+          $this->mode= $mode;
+          if($mode == 'process_add' || $mode == 'process_update')
+                $this->get_request_data();
+          if($mode == 'process_add')
+            try{
+                $this->httable->addNew();
+            }catch(Exception $e){
+                return false;
+            }
+          if($mode == 'process_update')
+            try{
+                $this->httable->update();
+            }catch(Exception $e){
+                return false;
+            }
+          return true;
+      }
+      public function get_id()
+      {
+        return $this->httable->get_unique();
+      }
+      protected function display_main()
+      {
+            switch($this->mode){
+                case 'add':
+                case 'update':
+                    $this->displayform(); break;
+                case 'process_add': case 'process_update':
+                    $this->httable->display(); break;
+                default : break;
+            }
+      }
+      protected function get_request_data()
+      {
+          foreach($_REQUEST as $key=>$value)
+              $this->httable->$key = $value;
+      }
+      abstract protected function displayform();
+}
+
+?>

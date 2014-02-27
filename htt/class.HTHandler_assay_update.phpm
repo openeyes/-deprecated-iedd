@@ -1,0 +1,13 @@
+<?php
+
+class HTHandler_assay_update extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormTableAssay($_REQUEST['testid']));
+		$this->page->setMenu(new HTMenuAssaySpecific());
+	}
+}
+
+
+
+?>

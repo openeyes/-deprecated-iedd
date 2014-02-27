@@ -1,0 +1,149 @@
+<?php
+
+class HTHandler_sample_display extends HTHandler_priv
+{
+	private $arg_array = array(); //an array to hold arguments for the DB_MySQL::prepare() function
+	//called with menu = sample, mode = display
+	//displays sample data in repsonse to a search, a list requery or single id
+	public function constructPage(){
+		//there are four possibilities
+		//	i)   a call from a list
+		//	ii)  dnano is set - display sample only
+		//	iii) subjectid is set - display sample if one record, list if more
+		//	iv)	 the rest - use larger query to construct a list
+
+		if($_REQUEST['requery'] == 'true') //called from a HTList
+		{
+			$this->getListPage();
+		}
+		elseif($_REQUEST['dnano'])
+		{
+			$this->getDNAPage($_REQUEST['dnano']);
+		}
+		elseif($_REQUEST['subjectid'] )
+		{
+			//execute query
+			$query = $this->constructQuery();
+			$db = HTDB_MySQL::getInstance();
+			$db->prepare($query);
+			try
+			{
+				$res = $db->execute($this->arg_array);
+				$rows = $res->num_rows();
+				//DEGUG
+				//echo "<p>Num of rows in query is ".$rows."</p>";
+				//echo "<p>arg_array is ".print_r($this->arg_array)."</p>";
+				switch ($rows)
+				{
+					case 0:
+						$this->getDefaultPage();
+						break;
+					case 1:
+						$res_array = $res->fetch_array();
+						$dnano = $res_array[0];
+						$this->getDNAPage($dnano);
+						break;
+					default:
+						$query = HTDB_MySQL::bindQuery($query,$this->arg_array);
+						$this->getListPage($query);
+						break;
+				}
+			}
+			catch(Exception $e)
+			{
+				$this->getDefaultPage();
+			}
+		}
+		elseif($_REQUEST['forename'] || $_REQUEST['surname'] || $_REQUEST['diagnosis'] || $_REQUEST['newgc'] )
+		{
+			$query = $this->constructQuery();
+			$query = HTDB_MySQL::bindQuery($query,$this->arg_array);
+			$this->getListPage($query);
+		}
+		else
+		{
+			$this->getDefaultPage();
+		}
+	}
+
+	private function constructQuery(){
+		$index = 0; //for :1, :2 arguments to DB_MySQL::prepare() function
+		//first the select clause...
+		$select = "select sample.dnano as 'DNANo', sample.subjectid as 'SubjectID', ";
+		$select .= "subject.forename as 'Firstname', subject.surname as 'Surname', ";
+		$select .= "sample.bloodtaken as 'DateTaken', ";
+		$select .= " sample.type as 'Tissue', sample.loggedby as 'Depositer', ";
+		$select .= " sample.comment as 'Comment' ";
+		//next the from clause - which tables to include
+		$from = " from sample, subject";
+		if($_REQUEST['diagnosis'])
+		{
+			$from .= ", diagnosis";
+		}
+		// now the where clause
+		$where = " where sample.subjectid=subject.subjectid";
+		if($subid = $_REQUEST['subjectid'])
+		{
+			array_push($this->arg_array, $subid); $index++;
+			$where .= " and sample.subjectid = ':$index'";
+		}
+		if($diag = $_REQUEST['diagnosis'])
+		{
+			array_push($this->arg_array, $diag); $index++;
+			$where .= " and diagnosis.subjectid = sample.subjectid and diagnosis.diagnosis=':$index'";
+		}
+		if($fore = $_REQUEST['forename'])
+		{
+			array_push($this->arg_array, $fore); $index++;
+			if($_REQUEST['rd_forename'] == 'part')
+				$where .= " and forename like '%:$index%'";
+			else
+				$where .= " and forename=':$index'";
+		}
+		if($sur = $_REQUEST['surname'])
+		{
+			array_push($this->arg_array, $sur); $index++;
+			if($_REQUEST['rd_surname'] == 'part')
+				$where .= " and surname like '%:$index%'";
+			else
+				$where .= " and surname=':$index'";
+		}
+		if($gc = $_REQUEST['newgc'])
+		{
+			array_push($this->arg_array, $gc); $index++;
+			$where .= " and newgc=':$index'";
+		}
+		return $select.$from.$where;
+	}
+
+	private function getDefaultPage(){
+		$this->page->addComponent(new HTString("Cannot find that sample"));
+		$this->page->setMenu(new HTMenuSample());
+	}
+
+	private function getDNAPage($dnano){
+		try
+		{
+			$sample = new HTTableSample($dnano);
+			if($id = $sample->subjectid)
+				$this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", new HTTableSubject($id)));
+			$this->page->addComponent(new HTRecordDisplay("HTTableSample", $sample));
+			$this->page->setMenu(new HTMenuSampleSpecific());
+		}
+		catch(Exception $e)
+		{
+			$this->getDefaultPage();
+		}
+	}
+	private function getListPage($query=""){
+		$this->page->addComponent(new HTList(
+			"menu=sample&mode=display",
+			array('DNANo'=> 'menu=sample&mode=display&dnano=',
+				'SubjectID' => 'menu=patient&mode=display&subjectid='),
+			$query
+		));
+		$this->page->setMenu(new HTMenuSample());
+	}
+
+  }//end of HTHandler_sample_display class
+?>

@@ -1,0 +1,6 @@
+<?php
+interface HTDBInterface{
+    public function prepare($query, $error_msg="");
+    public function execute();
+}
+?>

@@ -1,0 +1,9 @@
+<?php
+interface HTResultInterface {
+    public function fetch_array();
+    public function fetch_assoc();
+    public function num_rows();
+    public function num_fields();
+    public function fetch_fields(); //return array of fields from the query
+}
+?>

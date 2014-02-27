@@ -1,0 +1,68 @@
+<?php
+
+/* the database set of classes is taken from Advanced PHP programming - Schlossnagle
+Aims fo having these classes -
+1) To wrap all database specific functions in generic classes so that it will be possible
+to port easily to a different DBMS without having to strip all mysql-functions from
+all the code
+2) To have one place where queries happen allowing parameters to be 'slashed'
+exceptions to be thrown and queries echo when debugging.
+*/
+
+class HTResult_MySQL implements HTResultInterface
+{
+    protected $result; //a mysql result resource object - has an internal pointer
+    public function __construct($result){
+        $this->result= $result;
+    }
+    public function fetch_array()
+    {
+        if($this->result)
+              return mysql_fetch_array($this->result);
+        else
+              return false;
+    }
+    public function fetch_assoc()
+    {
+        if($this->result)
+              return mysql_fetch_assoc($this->result);
+        else
+              return false;
+    }
+    public function num_rows()
+    {
+        if($this->result)
+              return mysql_num_rows($this->result);
+        else
+              return false;
+    }
+    public function num_fields()
+    {
+        if($this->result)
+              return mysql_num_fields($this->result);
+        else
+              return false;
+    }
+    public function fetch_fields()
+    {
+        if(!$this->result)
+            return false;
+        else
+        {
+            $i =0;
+            $fields = array();
+            while($field_obj = mysql_fetch_field($this->result));
+                    $fields[$i++] = $field_obj->name;
+            $i = 0;
+            while ($i < mysql_num_fields($this->result))
+            {
+                  $meta = mysql_fetch_field($this->result, $i);
+                  $fields[$i++] = $meta->name;
+            }
+            return $fields;
+        }
+    }
+}
+
+
+?>

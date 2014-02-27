@@ -1,0 +1,48 @@
+<?php
+
+class HTTableDiagnosticAssay extends HTTable
+{
+    const key = "testid";
+    const table = "diagnosticassay";
+    protected $fields = array(
+            "SubjectID" => "Subject ID",
+            "Gene" => "Gene",
+            "DateSampleSent" =>"Date sent",
+            "DateResultReceived" => "Date received",
+            "Result" => "Result",
+            "Institution" => "Institution",
+            "Comment" => "Comment");
+
+    /////////////////////////////
+    // public functions
+    /////////////////////////////
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+    }
+	public function addNew()
+    {
+		$this->validateSubjectid();
+        parent::addNew();
+    }
+    //////////////////////////////////
+    // protected and private functions
+    //////////////////////////////////
+	protected function get_data() //over-ride parent function
+    {
+		parent::get_data();
+		$this->validateSubjectid();
+    }
+	private function validateSubjectid()
+	{
+		//called from constructor and addNew()
+		$query = "select * from subject where subjectid=".$this->subjectid;
+		$this->database->prepare($query);
+		$res = $this->database->execute();
+		if($res->num_rows() != 1)
+            throw new Exception("Invalid subjectid when getting data for HTDiagnosticAssay");
+	}
+
+} //end of HTTableDiagnosticAssay class
+?>

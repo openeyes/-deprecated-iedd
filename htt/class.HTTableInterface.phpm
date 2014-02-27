@@ -1,0 +1,8 @@
+<?php
+interface HTTableInterface {
+    public function display(); //display all data
+    public function addNew(); //add a new record to the database
+    public function update(); //update the data from class to database
+    public function delete(); //delete the record from the database. Perform cascade deletes as necessary
+}
+?>

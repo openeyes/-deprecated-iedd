@@ -1,0 +1,21 @@
+<?php
+
+abstract class HTHandler
+{
+	protected $page;//a HTPage object
+	protected $logger;
+	public function __construct(){
+		$this->page = new HTPage();
+		$this->logger = HTLogger::getInstance();
+	}
+	public function getPage()
+	{
+		$this->constructPage();
+		return $this->page;
+	}
+	protected function constructPage(){}
+}
+
+
+
+?>

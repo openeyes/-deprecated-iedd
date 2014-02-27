@@ -1,0 +1,51 @@
+<?php
+class HTHandler_session extends HTHandler
+{
+	static $defaultHandlers = array("home","patient","sample", "family", "assay", "patient_search",
+		"sample_search", "family_search", "patient_display","sample_display", "family_display",
+		"family_update", "assay_search", "assay_display");
+	protected function constructPage()
+	{
+		//logged on already
+		if(isset($_SESSION['user']))
+		{
+			//has login lapsed?
+			if(time() - $_SESSION['time'] > HTApplication::getInstance()->getLogoutTime() *60)
+			{
+				$str = "Hi there ".$_SESSION['realname'].". You were gone for some time; you're now logged out.";
+				unset($_SESSION['user']); session_destroy();
+				$this->page->setTitle("Log in again");
+				$this->page->addComponent(new HTString($str));
+				$this->page->addComponent(new HTFormLogin());
+			}
+			else //so, logged in and current - need to let other handlers generate page - will return a false page
+			{
+				$_SESSION['time'] = time();
+				$this->logger->setLastLogin();
+				$this->page = false;
+			}
+		}
+		//detect login attempt and test it
+		elseif (
+		        isset($_POST['logon']) &&
+		        ($person = new HTTablePerson()) &&
+		        $person->verify($_POST['user'], $_POST['password'])
+		        )
+		{
+		    $_SESSION['user'] = $person->user;
+		    $_SESSION['realname'] = $person->realname;
+		    $_SESSION['time'] = time();
+		    $this->logger->setLastLogin();
+		    $_SESSION['AllowedHandlers'] = array_merge(self::$defaultHandlers, split(',',$person->priv));
+		    $_REQUEST['menu'] = 'home';
+		   	$this->page->setMenu(new HTMenuHome());
+		}
+		//not logged on (eg first time page accessed) or unsuccessful logon
+		else
+		{
+			   $this->page->addComponent(new HTFormLogin());
+		}
+	}
+} //end of HTHandler_session class
+
+?>

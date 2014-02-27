@@ -1,0 +1,21 @@
+<?php
+
+
+class HTMenuFamilySpecific extends HTMenuFamily
+{
+	public function __construct(){
+		parent::__construct();
+		if($id = $_REQUEST['newgc']) //only add these if a specific family has been requested
+		{
+			$this->addButton(new HTLink("Family Details",
+				array("menu"=>"family", "mode" => "display", "newgc"=> $id),
+				"Display family details"));
+			$this->addButton(new HTLink("Family Update",
+				array("menu"=>"family", "mode" => "update", "newgc"=> $id),
+				"Update family details"));
+		}
+	}
+}
+
+
+?>

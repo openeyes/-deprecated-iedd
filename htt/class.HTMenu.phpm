@@ -1,0 +1,27 @@
+<?php
+/*
+A class to display a menu, usually within an element of a CSS page or an element of a table
+It maintains an array of HTLink objects which are then displayed on request
+*/
+ class HTMenu implements HTWebComponent
+ {
+	protected $buttons = array(); //an array of HTLinks
+	public function addButton(HTLink $button)
+	{
+		array_push($this->buttons, $button);
+	}
+	public function display(){
+		echo "\n<div class='menu'>";
+		$this->displayButtons();
+		echo "\n</div>";
+
+	}
+	protected function displayButtons(){
+		foreach($this->buttons as $button)
+			$button->display();
+	}
+}
+
+
+
+?>

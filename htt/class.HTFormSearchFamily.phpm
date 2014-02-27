@@ -1,0 +1,60 @@
+<?php
+class HTFormSearchFamily extends HTForm
+{
+	//called by handler family_search - a form that searches and transmits X pieces of data:
+	//the newgc number
+	//or any of the following:
+	//diagnosis, geneid, consanguinity (on or not set), moldata (on or not set).
+	public function display()
+	{
+		//two arrays for radio button labels and values
+		$radio_dob = array('Date&nbsp;of&nbsp;birth&nbsp;(dd/mm/yyyy)' => 'dob', 'Age' => 'age');
+		$radio_word = array('Whole&nbsp;word' => 'whole', 'Part&nbsp;word' => 'part');
+		//construct array for diagnoses
+		$null_array = array(''=>'');
+		$diag_array = $null_array + HTTableDiagnosis::get_diagnosis_array(40);
+		$gene_array = $null_array + HTTableGenelist::get_gene_array(40);
+
+		////////////////start form here for id search.
+		$this->begin_form();
+		//start table here, 4 columns wide
+		echo "<table border='3' cellpadding='2'>";
+		echo "<tr>";
+		$newgc = new HTControlTextbox("Family&nbsp;ID", "newgc", "", false);
+		$newgc->display(true, 8, 7);
+		echo "</tr>";
+		echo "<td>&nbsp;</td><td align='left'><input type='submit' value='Search by family ID' /></td>";
+		echo "</tr>";
+		echo "</form>";
+		///////////////end of id search form
+
+		//////////////start form here for details search
+		$this->begin_form();
+		echo "<tr>";
+		$diagnosis = new HTControlSelect("Principal diagnosis", "diagnosis", $diag_array, "");
+		$diagnosis->display(true);
+		echo "</tr>";
+		echo "<tr>";
+		$diagnosis = new HTControlSelect("Causative gene (if known)", "geneid", $gene_array, "");
+		$diagnosis->display(true);
+		echo "</tr><tr>";
+		$consang = new HTControlCheckbox("Only consanguineous families?","consanguinity", false);
+		$consang->display(true);
+		echo "</tr><tr>";
+		$moldata = new HTControlCheckbox("Only families with known molecular diagnosis?","moldata", false);
+		$moldata->display(true);
+		echo "</tr><tr>";
+		echo "<td>&nbsp;</td><td align='left'><input type='submit' value='Search by details'></td></tr>";
+
+		echo "</table></form>";
+  }
+  private function begin_form()
+      {
+			//a separate function as this is used twice in the display() function
+            echo "<form method='post' action='".$_SERVER['PHP_SELF']."' />";
+            echo "<input type='hidden' name='menu' value='family' />";
+            echo "<input type='hidden' name='mode' value='display' />";
+      }
+
+}
+?>

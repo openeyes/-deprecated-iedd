@@ -1,0 +1,136 @@
+<?php
+
+class HTTableAssay extends HTTable
+{
+    const key = "testid";
+    const table = "assay";
+    protected $fields = array(
+			"subjectid" => "Subject ID",
+            "geneid" => "Gene",
+            "gene" => "Gene",
+            "result" =>"Result",
+            "resultdate" => "Date entered",
+            "exon" => "Exon",
+            "primerf" => "Forward primer",
+            "primerr" => "Reverse primer",
+            "method" => "Method",
+			"basechange" => "Nucleotide",
+			"aminoacidchange" => "Protein",
+			"homo" => "Homozygous for rare allele",
+            "comment" => "Comment",
+            "timestamp" => false,
+            "enteredby" => "Entered by",
+            "dnano" => "Sample ID",
+            "assay" => "Assay",
+            "effect" => "Disease causation"
+			);
+	protected $foreign_keys = array("subjectid" => "subject");
+	private $geneName;
+	protected $geneDirty;	//$this->data['geneid'] is represented as the gene name not the id. Hence, for displaying
+							//and updating the id has to be retrieved separately
+	protected $effect_enum = array("normal","polymorphism","possible mutation","not sure");
+
+    /////////////////////////////
+    // public functions
+    /////////////////////////////
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+        $this->getGeneName();
+    }
+    public function __set($var, $value)
+    {
+        if(strtolower($var) == 'effect' && !in_array(strtolower($value), $this->effect_enum))
+            $value = "Not sure";
+		parent::__set($var, $value);
+		if(strtolower($var) == 'geneid')
+			$this->geneDirty = true;
+    }
+    public function __get($var)
+    {
+        $retval = parent::__get($var);
+        switch($var)
+        {
+			case "geneid" : if($this->geneDirty) $this->getGeneName();$retval = $this->geneName; break;
+            default : break;
+        }
+        return $retval;
+    }
+	public function addNew(){
+		if($this->dnano != "")
+			$this->validateDnano(); //will throw exception if invalid
+		parent::addNew();
+	}
+	public function update(){
+		if($this->dnano != "" && $this->dirty_data['dnano'])
+			$this->validateDnano();
+		parent::update();
+	}
+    public function displayShort()
+    {
+        $str =  $this->getSubjectName()." (".$this->subjectid.") ".$this->geneid;
+        $str .= " ".$this->basechange." ".$this->aminoacidchange." ".$this->method;
+        echo $str;
+    }
+	public function formatTimestamp(){
+		$query =  "select date_format(timestamp, '%H:%i %D %b %Y') from $this->table_name ";
+		$query .= "where $this->key_name=$this->unique";
+		$res = $this->database->prepare($query)->execute();
+		$row = $res->fetch_array();
+		return $row[0];
+	}
+	public function getGeneid(){
+		return $this->data["geneid"];
+	}
+    //////////////////////////////////
+    // protected and private functions
+    //////////////////////////////////
+	private function getGeneName() //gets gene name from the database given the geneid
+	{
+		if($this->data['geneid'])
+		{
+			$query = "select gene from genelist where geneid=".$this->data['geneid'];
+			$res = $this->database->prepare($query)->execute();
+			if($res->num_rows() != 1)
+				throw new Exception();
+			else
+			{
+				$row = $res->fetch_array();
+				$this->geneName = $row[0];
+			}
+		}
+		$this->geneDirty = false;
+	}
+	private function getSubjectName()
+	{
+		$query = "select concat(forename,' ',surname) from subject where subjectid=$this->subjectid";
+		$res = $this->database->prepare($query)->execute();
+		$row= $res->fetch_array();
+		return $row[0];
+	}
+	private function validateDnano()
+	{
+		//if dnano is set, ensure that it is present in sample table
+		//if subjectid is set, ensure that it matches with dnano
+		//if subjectid is not set, set it.
+		$query = "select * from sample where dnano=$this->dnano";
+		$res = $this->database->prepare($query)->execute();
+		if($res->num_rows() != 1)
+			throw new Exception("Invalid DNA number ($this->dnano)");
+		$row = $res->fetch_assoc();
+		$subjectid = $row['subjectid'];
+		if($this->subjectid != "")
+		{
+			if($this->subjectid != $subjectid)
+				throw new Exception("Subjectid ($this->subjectid) and sampleno ($this->dnano) do not match");
+		}
+		else
+		{
+			$this->subjectid = $subjectid;
+			$this->dirty_data['subjectid'] = true;
+		}
+	}
+
+} //end of HTTableAssay class
+?>

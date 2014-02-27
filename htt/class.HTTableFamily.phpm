@@ -1,0 +1,207 @@
+<?php
+
+class HTTableFamily extends HTTable
+{
+    const key = "newgc";
+    const table = "pedigree";
+    protected $fields = array(
+            "Inheritance" => "Inheritance",
+            "consanguinity" => "Consanguinous?",
+			"geneid" => "Gene",
+			"basechange" => "Nucleotide",
+			"aminoacidchange" => "Protein",
+			"lastupdatedby" => "Last updated by",
+            "FreeText" => "Comment",
+            "diagnosis" => "Principal diagnosis",
+            "members" => "No of members on database",
+            "affecteds" => "No of affected members",
+            "timestamp" => false
+			);
+	protected $foreign_keys = array("geneid" => "genelist");
+    protected $Inheritance_enum = array("autosomal dominant", "autosomal dominant with reduced penetrance",
+        "autosomal recessive", "mitochondrial", "simplex", "x-linked recessive");
+    protected $Consang_enum = array("y", "n");
+    private $oldped_array = array(); //of HToldped objects as a one to many (dnano->address) relationship
+    private $geneName; //name of gene
+    private $geneDirty; //does the geneName need fetching?
+
+    /////////////////////////////
+    // public functions
+    /////////////////////////////
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+        $this->geneDirty = true;
+        if($id)
+        {
+            $this->set_oldped();
+        }
+    }
+    public function __set($var, $value)
+    {
+        if(strtolower($var) == 'inheritance' && !in_array(strtolower($value), $this->Inheritance_enum))
+            $value = "Unknown/other";
+        if(strtolower($var) == 'consanguinity')
+        {
+			$valuefirst = strtolower(substr($value,0,1));
+        	if(!in_array($valuefirst, $this->Consang_enum) || $value == "")
+        		$value = 'n';
+        	else
+        		$value = substr($value,0,1);
+		}
+		parent::__set($var, $value);
+		if(strtolower($var) == 'geneid')
+			$this->geneDirty = true;
+    }
+    public function __get($var)
+    {
+        $retval = parent::__get($var);
+        switch($var)
+        {
+			case "geneid" : if($this->geneDirty) $this->getGeneName();$retval = $this->geneName; break;
+            case "oldpeds" : $retval = $this->format_oldpeds(); break;
+            default : break;
+        }
+        return $retval;
+    }
+
+    public function delete(){
+		//check that there are no persons with this newgc
+		if(!$this->deleteIntegrity())
+			throw new Exception("Cannot delete pedigree $this->unique when subjects still exist");
+		parent::delete();
+	}
+    public function displayShort()
+    {
+        $str = "Pedigree number:".$this->unique;
+        $str .= $this->inheritance ? " Inheritance:".$this->inheritance : "";
+        $str .= $this->consanguinity ? " Consanguinity = ".$this->consanguinity : "";
+        $str .= $this->members ? " Members -  ".$this->members : "";
+        $str .= $this->affecteds ? " Affecteds -  ".$this->affecteds : " None affected";
+        $str .= $this->geneid ? ("<br /> ".$this->geneid." ".$this->basechange." ".$this->aminoacidchange) : "";
+        echo $str;
+    }
+    public function updateNewMember()
+    {
+		$this->updateDiagnosis();
+		$this->updateFamilyMembers();
+		$this->update();
+	}
+	public static function get_inheritance_array(){
+		$array = array("Unknown/other"=>"Unknown/other","autosomal dominant"=>"Autosomal Dominant",
+		"autosomal dominant with reduced penetrance"=>"Autosomal Dominant with Reduced Penetrance",
+        "autosomal recessive"=>"Autosomal Recessive",
+        "mitochondrial"=>"Mitochondrial",
+        "simplex"=>"Simplex",
+        "x-linked recessive"=>"X-linked Recessive");
+		return $array;
+	}
+	public function formatTimestamp(){
+		$query =  "select date_format(timestamp, '%H:%i %D %b %Y') from $this->table_name ";
+		$query .= "where $this->key_name=$this->unique";
+		$res = $this->database->prepare($query)->execute();
+		$row = $res->fetch_array();
+		return $row[0];
+	}
+    //////////////////////////////////
+    // protected and private functions
+    //////////////////////////////////
+     protected function display_data()
+     {
+         parent::display_data();
+         if($this->oldped_array)
+         {
+               echo "\n<li>old pedigrees -";
+               foreach($this->oldped_array as $a)
+               {
+                   $a->displayShort();
+               }
+               echo "\n</li>";
+         }
+     }
+     private function format_oldpeds()
+     {
+           foreach($this->oldped_array as $a)
+                 $str .= $a->format().", ";
+           return HTUtils::term_str($str); //remove terminating ", "
+     }
+     private function set_oldped()//when object constructed with id, gets addresses into object
+     {
+		 foreach($this->oldped_array as $i => $x) //delete old addresses from array
+			 unset($this->oldped_array[$i]);
+		 $query="select ".HTTableOldped::key." from ".HTTableOldped::table." where ";
+		 $query .=HTTableFamily::key."=".$this->unique;
+		 $this->database->prepare($query);
+		 $res = $this->database->execute();
+		 while($row = $res->fetch_array())
+			 array_push($this->oldped_array, new HTTableOldped($row[0]));
+     }
+     private function deleteIntegrity()
+     {
+		 //checks to see if pedigree members exist before deleting pedigree.
+		 $query = "select * from subject where $this->key_name=$this->unique";
+		 $this->database->prepare($query);
+		 $res = $this->database->execute();
+		 if($res->num_rows() > 0)
+		 	return false;
+		 else
+		 	return true;
+	 }
+	private function getGeneName() //gets gene name from the database given the geneid
+	{
+		if($this->data['geneid'])
+		{
+			$query = "select gene from genelist where geneid=".$this->data['geneid'];
+			$this->database->prepare($query);
+			$res = $this->database->execute();
+			if($res->num_rows() != 1)
+				throw new Exception();
+			else
+			{
+				$row = $res->fetch_array();
+				$this->geneName = $row[0];
+			}
+		}
+		$this->geneDirty = false;
+	}
+	private function updateDiagnosis()
+	{
+		//if this field is null then a query is made of the most common diagnosis in the family members
+		//and this is placed in the field. If no diagnoses are available the term Not Known is placed there.
+		//09/09/2008 Let us instead, always perform the query, as often the diagnosis needs updating
+		//if(!$this->diagnosis || $this->diagnosis == "NULL")
+		//{
+			//here's a query to find the most common diagnosis amongst family members of this pedigree
+			$query = "select diagnosis.diagnosis as d, count(subject.subjectid) as n from pedigree, subject, diagnosis ";
+			$query .= "where pedigree.newgc=subject.newgc and subject.subjectid=diagnosis.subjectid and ";
+			$query .= "diagnosis.diagnosis != '' and pedigree.newgc=$this->newgc ";
+			$query .= "group by d order by n desc";
+			$this->database->prepare($query);
+			$res = $this->database->execute();
+			if($res->num_rows() == 0)
+				$this->diagnosis = "Not known";
+			else
+			{
+				$row = $res->fetch_array();
+				$this->diagnosis = $row[0];
+			}
+		//}
+	}
+	private function updateFamilyMembers(){
+		$query =  "select status, count(subjectid) as count from subject, pedigree where ";
+		$query .= "subject.newgc=pedigree.newgc and pedigree.newgc=$this->newgc group by status order by status";
+		$this->database->prepare($query);
+		$res = $this->database->execute();
+		$members=0; $affecteds = 0;
+		while ($array = $res->fetch_assoc())
+		{
+			$members += $array['count'];
+			if(strtolower($array['status']) == strtolower('Affected'))
+				$affecteds = $array['count'];
+		}
+		$this->affecteds = $affecteds;
+		$this->members = $members;
+	}
+} //end of HTsample class
+?>

@@ -1,0 +1,103 @@
+<?php
+class HTFormTableAddress extends HTForm
+{
+	private $httable; // a HTTable object
+	private $mode;
+    public function __construct($id=false)
+    {
+        $this->httable = new HTTableAddress($id);
+	    $this->mode = $_REQUEST['mode'];
+    }
+    public function display()
+    {
+		$formname="addresForm";
+        $extractedby_array = array(''=>'','Bev'=>'Bev', 'Naushin'=>'Naushin');
+        $box_array = $this->getBoxArray();
+        $letter_array = $this->getLetterArray();
+        $number_array = $this->getNumberArray();
+        $today = date("d-m-Y");
+        $record = array(
+            new HTControlTextbox('DNA&nbsp;number','dnano', $_REQUEST['dnano'], true),
+            new HTControlTextbox('Extraction&nbsp;date', 'extracted', $today, false),
+            new HTControlSelect('Extracted&nbsp;by','extractedby',$extractedby_array, 'Bev'),
+            new HTControlTextbox('Location','location','',true),
+            new HTControlSelect('Box', 'box', $box_array),
+            new HTControlSelect('Letter', 'letter', $letter_array),
+            new HTControlSelect('Number', 'number', $number_array),
+            new HTControlTextarea("Comments", 'comment','', false)
+            );
+            if($this->mode == 'update')//populate the controls
+            {
+                foreach($record as $r)
+                {
+                    $prop = $r->get_name() ;
+                    if($prop == 'extracted' )
+                        $r->set_value(HTUtils::date_mysql_en($this->httable->$prop));
+                    else
+                        $r->set_value($this->httable->$prop);
+                }
+            $record[3]->set_value = $this->httable->box.$this->httable->letter.$this->httable->number;
+            }
+            $JS = "onChange='document.$formname.location.value=";
+            $JS .= "document.$formname.box.options[document.$formname.box.selectedIndex].value";
+            $JS .= "+\"/\"+document.$formname.letter.options[document.$formname.letter.selectedIndex].value";
+            $JS .= "+document.$formname.number.options[document.$formname.number.selectedIndex].value;'";
+            for($i=4; $i<7;++$i)
+            	$record[$i]->add_JS($JS);
+            echo "\n<form method='post' name='$formname' action='".$SERVER['PHP_SELF']."' onSubmit=' return validate_address(document.$formname);'>";
+            echo "\n<input type='hidden' name='menu' value='address' />";
+            echo "\n<input type='hidden' name='mode' value='$this->mode"."_process' />";
+            echo "\n<table border='1' cellpadding='3'>";
+            foreach($record as $r)
+            {
+                  echo "\n<tr>";
+                  $r->display(true);
+                  echo "</tr>";
+            }
+            echo "\n<tr><td colspan='2' align='center'><input type='submit' value='".strtoupper($this->mode)."' />";
+            echo "</td></tr>";
+            echo "\n</table>";
+            echo "\n</form>";
+    }
+    private function getBoxArray()
+    {
+		$array = array();
+		for($i=1; $i<50; ++$i)
+		{
+			$elem = "DLL$i";
+			$array[$elem] = $elem;
+		}
+		for($i=1; $i<16; ++$i)
+		{
+			$elem = "GL$i";
+			$array[$elem] = $elem;
+		}
+		for($i=1; $i<200; ++$i)
+		{
+			$elem = "LL$i";
+			$array[$elem] = $elem;
+		}
+		return $array;
+	}
+	private function getLetterArray()
+	{
+		$array = array();
+		$letters = "ABCDEFGHIJ";
+		for($i=1;$i<11; ++$i)
+		{
+			$elem=substr($letters,$i-1,1);
+			$array[$elem] = $elem;
+		}
+		return $array;
+	}
+	private function getNumberArray()
+	{
+		$array = array();
+		$array[1] = "1";
+		for($i=2;$i<38;++$i)
+			array_push($array,$i);
+		return $array;
+	}
+
+}
+?>

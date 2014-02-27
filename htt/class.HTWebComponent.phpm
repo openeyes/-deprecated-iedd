@@ -1,0 +1,6 @@
+<?php
+interface HTWebComponent {
+    public function display(); //display all data
+}
+
+?>

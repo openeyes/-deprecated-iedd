@@ -1,0 +1,59 @@
+<?php
+class HTFormTableFamily extends HTForm
+{
+	//called by HTHandler_family_update and used to update an existing family.
+	//Note - it is not allowed to add a new family; that only occurs automatically when
+	//a new subject is added without a family ID.
+	private $httable; // a HTTable object
+	public function __construct($id = false){
+	  $this->httable= new HTTableFamily($id);
+	}
+
+	public function display(){
+		$gene_array = array("" => "") + HTTableGenelist::get_gene_array();
+		$consang_array = array("N" => "No/Not known", "Y" => "Yes");
+		$inheritance_array = HTTableFamily::get_inheritance_array();
+		$updatedby = $this->httable->lastupdatedby; $updatedat = $this->httable->formatTimestamp();//date("H:i jS M Y",$this->httable->timestamp);
+
+		$record = array(
+			  new HTControlTextbox("Unique&nbsp;ID",'newgc','', true),
+			  new HTControlTextbox("Number of members",'members','', true),
+			  new HTControlTextbox("Number of affecteds",'affecteds','', true),
+			  new HTControlTextbox("Principal diagnosis",'diagnosis','', true, 42, 42),
+			  new HTControlSelect("Mode of Inheritance",'inheritance',$inheritance_array),
+			  new HTControlSelect("Consanguinity",'consanguinity',$consang_array),
+			  new HTControlSelect("Causative gene (if known)",'geneid',$gene_array),
+			  new HTControlTextbox("Nucleotide change (if known)",'basechange','', false, 25, 26),
+			  new HTControlTextbox("Protein change (if known)",'aminoacidchange','', false, 25, 26),
+			  new HTControlTextarea("Comments", 'FreeText','', false),
+		);
+
+		//set control values from HTpatient
+		foreach($record as $r)
+		{
+			$prop = $r->get_name() ;
+			//HTTableFamily::__get('geneid') returns the gene name, but we need the id; array_search(value, array) helps...
+			if($prop == 'geneid')
+				$r->set_value(array_search($this->httable->$prop, $gene_array));
+			else
+				$r->set_value($this->httable->$prop);
+		}
+
+		echo "\n<form method='post' name='form_edit' action='".$_SERVER['PHP_SELF']."'>";
+		echo "\n<input type='hidden' name='menu' value='family' />";
+		echo "\n<input type='hidden' name='mode' value='update_process' />";
+		echo "\n<table border='1' cellpadding='3'>";
+		foreach($record as $r)
+		{
+			  echo "\n<tr>";
+			  $r->display(true);
+			  echo "</tr>";
+		}
+		//add two buttons for selecting or deleting a diagnosis
+		echo "\n<tr><td colspan='2' align = 'center'><input type='submit' value='Update Pedigree Details'></td></tr>";
+		echo "\n<tr><td colspan='2' align='center'>Last updated $updatedby $updatedat</td></tr>";
+		echo "\n</table>";
+		echo "\n</form>";
+	}
+} //end of HTFormTableFamily class
+?>

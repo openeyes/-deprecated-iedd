@@ -1,0 +1,44 @@
+<?php
+
+class HTTableGenelist extends HTTable
+{
+    const key = "geneid";
+    const table = "genelist";
+    protected $fields = array(
+     "gene" => "Gene",
+	 "location" => "Chromosomal location",
+	 "description" =>"Description",
+	 "details" => "Details",
+	 "refs" => "References"
+	 );
+
+    public function __construct($id=false){
+        $this->key_name = self::key;
+        $this->table_name = self::table;
+        parent::__construct($id);
+    }
+    public function displayShort()
+    {
+           echo  $this->gene.": ".$this->description;
+    }
+    public static function get_gene_array($maxlength = 40)
+      {
+		    //NB longest lenght of sting is 35 chars - "GUCY2D, CORD6, LCA1, RETGC, RETGC1;", id = 64
+            //get an associated array thus $array[geneid] = AIPL1 fo use in option controls
+            $query = "select geneid, gene from genelist order by priority, gene";
+            $db = HTDB_MySQL::getInstance();
+            $db->prepare($query, "cannot create gene array from genelist table");
+            $r = $db->execute();
+            $gene_array = array();
+            while($row = $r->fetch_array())
+            {
+                $geneid = $row[0];
+                $gene = $row[1];
+                if(strlen($gene) > $maxlength - 2)
+                              $gene = substr($gene, 0, $maxlength - 2)."..";
+                $gene_array[$geneid] = $gene;
+            }
+            return $gene_array;
+      }
+} //end of HTTableGenelist class
+?>

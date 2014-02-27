@@ -1,0 +1,71 @@
+<?php
+class HTFormSearchSample extends HTForm
+{
+      public function display()
+      {
+            //two arrays for radio button labels and values
+            $radio_word = array('Whole&nbsp;word' => 'whole', 'Part&nbsp;word' => 'part');
+            //construct array for diagnoses
+            $diag_array = array(''=>'');
+            $diag_array = array_merge($diag_array, HTTableDiagnosis::get_diagnosis_array(35));
+
+            ////////////////start form here for dnano search.
+            $this->begin_form();
+            //start table here, 4 columns wide
+            echo "<table border='3' cellpadding='2'>";
+            echo "<tr>";
+            $dnano = new HTControlTextbox("DNA&nbsp;number", "dnano", "", false);
+            $dnano->display(true, 8, 7);
+            echo "<td><input type='submit' value='  Search by DNA No  ' /></td>";
+            echo "</tr>";
+            echo "</form>";
+            ///////////////end of id search form
+
+            ////////////////start form here for subjectid search.
+            $this->begin_form();
+            //start table here, 4 columns wide
+            echo "<tr>";
+			$subjectid = new HTControlTextbox("Subject&nbsp;ID", "subjectid", "", false);
+			$subjectid->display(true,8,7);
+            echo "<td><input type='submit' value='Search by Subject ID' /></td>";
+            echo "</tr>";
+            echo "</form>";
+            ///////////////end of id search form
+
+            //////////////start form here for details search
+            $this->begin_form();
+            $forename = new HTControlTextbox("Firstname", "forename", "", false);
+            $forename->display(true);
+            echo "<td>";
+            $rd_forename = new HTControlRadio("", "rd_forename", $radio_word, 'whole');
+            $rd_forename->display(false);
+            echo "</td></tr><tr>";
+            $surname = new HTControlTextbox("Surname", "surname", "", false);
+            $surname->display(true);
+            echo "<td>";
+            $rd_surname = new HTControlRadio("", "rd_surname", $radio_word, 'whole');
+            $rd_surname->display(false);
+            echo "</td></tr><tr>";
+            $diagnosis = new HTControlSelect("Diagnosis", "diagnosis", $diag_array);
+            echo "<td colspan='3' align='center'>";
+            $diagnosis->display(false);
+            echo "</td>";
+            echo "</tr><tr>";
+            $newgc= new HTControlTextbox("GC&nbsp;number", "newgc", "", false);
+            $newgc->display(true, 7, 6);
+            echo "<td><input type='submit' value='   Search by details   '></td>";
+            echo "</form>";
+            ////////////end of details search form
+
+            echo "</tr></table>";
+            //end of table
+      }
+      private function begin_form()
+      {
+			//a separate function as this is used twice in the display() function
+            echo "<form method='post' action='".$_SERVER['PHP_SELF']."' />";
+            echo "<input type='hidden' name='menu' value='sample' />";
+            echo "<input type='hidden' name='mode' value='display' />";
+      }
+}
+?>

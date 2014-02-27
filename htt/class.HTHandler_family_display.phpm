@@ -1,0 +1,96 @@
+<?php
+
+class HTHandler_family_display extends HTHandler_priv
+{
+	//called with menu = family, mode = display
+	//displays family data in repsonse to a search, a list requery or single id
+	//receives the following data from the HTFormSearchFamily class:
+	//the newgc number
+	//or any of the following:
+	//diagnosis, geneid, consanguinity (on or not set), moldata (on or not set).
+	private $arg_array = array(); //an array to hold arguments for the DB_MySQL::prepare() function
+	public function constructPage(){
+		if($_REQUEST['newgc'])
+		{
+			$this->makeFamilyPage($_REQUEST['newgc']);
+		}
+		else if($_REQUEST['requery'] == 'true') // a call from a list
+		{
+			$this->makeListPage();
+		}
+		else if($_REQUEST['diagnosis'] || $_REQUEST['geneid'] || $_REQUEST['consanguinity'] || $_REQUEST['moldata'])
+		{
+			$query = $this->constructQuery();
+			$query = HTDB_MySQL::bindQuery($query,$this->arg_array);
+			$this->makeListPage($query);
+		}
+		else
+		{
+			$this->makeDefaultPage();
+		}
+	}
+
+	private function constructQuery()//constructs family search query from $_REQUEST
+    {
+		$index = 0; //for :1, :2 ... arguments to DB_MySQL::prepare() function
+		//We will have data on diagnosis, geneid, consanguinity, moldata
+		//(1) select clause
+		$query =  "select newgc, diagnosis, inheritance, consanguinity, genelist.gene, members, affecteds from pedigree left join genelist ";
+		$query .= "on pedigree.geneid=genelist.geneid ";
+		//(2) where clause
+		$query .= "where ";
+		if($d = $_REQUEST['diagnosis'])
+		{
+			array_push($this->arg_array, $d); $index++;
+			$query .= "diagnosis = ':$index' and ";
+		}
+		if($g = $_REQUEST['geneid'])
+		{
+			array_push($this->arg_array, $g); $index++;
+			$query .= "pedigree.geneid = ':$index' and ";
+		}
+		if($_REQUEST['consanguinity'])
+			$query .= "consanguinity = 'Y' and ";
+		if($_REQUEST['moldata'])
+			$query .= "pedigree.geneid != '' and pedigree.geneid is not null and ";
+
+		$query = HTUtils::term_str($query, 5);
+		return $query;
+	}
+
+	private function makeFamilyPage($id)
+	{
+		try
+		{
+			$family = new HTTableFamily($id);
+			$this->page->addComponent(new HTRecordDisplay("HTTableFamily", $family));
+			$query = "select * from subject where newgc=$id";
+			$this->page->addComponent(new HTList(
+				"menu=family&mode=display&newgc=$id",
+				array('subjectid'=>'menu=patient&mode=display&subjectid='),
+				$query)
+			);
+			$this->page->setMenu(new HTMenuFamilySpecific());
+		}
+		catch(Exception $e)
+		{
+			$this->makedefaultPage();
+		}
+	}
+	private function makeListPage($query=""){
+			$this->page->setMenu(new HTMenuFamily());
+			$this->page->addComponent(
+				new HTList(
+				"menu=family&mode=display",
+				array('subjectid'=>'menu=patient&mode=display&subjectid=','newgc'=> 'menu=family&mode=display&newgc='
+					),
+				$query
+			));
+	}
+	private function makeDefaultPage(){
+		$this->page->setMenu(new HTMenuFamily());
+		$this->page->addComponent(new HTString("Cannot find that family"));
+	}
+
+} // end of HTHandler_family_display class
+?>

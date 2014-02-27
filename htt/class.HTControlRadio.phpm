@@ -1,0 +1,35 @@
+<?php
+class HTControlRadio extends HTControl
+{
+      //renders a set of radio controls, each with a separate label and value, as part of a
+      //table (two horizontal cells). The options themselves can be either vertical or horizontal
+      private $label_value_array;
+      private $checked_value; //which one is checked? this is the value of the checked item
+      public function __construct($label, $name, $label_v, $selected_value = "")
+      {
+            parent::__construct($label, $name);
+            $this->label_value_array = $label_v;
+            $this->checked_value = $selected_value;
+      }
+      public function set_value($v){$this->checked_value = $v;}
+      public function display($table, $vert_bool = true)
+      {
+      		$display = $table ? "<td align='right'>".$this->label."&nbsp;</td><td align='left'>" : $this->label."&nbsp;";
+            $display .= "\n<table border='1' cellpadding='3' cellspacing='0'>";
+            if(!$vert_bool) $display .= "<tr>";
+            foreach($this->label_value_array as $label => $value)
+            {
+                  if($vert_bool) $str .= "<tr>";
+                  $display .= "\n<td align='right'>$label&nbsp;</td><td align='left'>";
+                  $display .= "<input type='radio' name='$this->name' value=\"$value\" ";
+                  if($value == $this->checked_value) $display .= "checked='checked' ";
+                  $display .= "/></td>";
+                  if($vert_bool) $display .= "</tr>";
+            }
+            if(!$vert_bool) $display .= "</tr>";
+            $display .= "</table>";
+            $display .= $this->table? "</td>" : "";
+            echo $display;
+      }
+}
+?>

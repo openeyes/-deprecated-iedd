@@ -1,0 +1,33 @@
+<?php
+class HTHandler_assay_update_process extends HTHandler_priv
+{
+	private $httable;
+	public function constructPage(){
+        try
+        {
+			$this->httable = new HTTableAssay($_REQUEST['testid']);
+			$sub = new HTTableSubject($_REQUEST['subjectid']);
+			$this->getRequestData();
+            $this->httable->update();
+            $this->page->addComponent(new HTString("The following record has just been updated."));
+            $this->page->addComponent(new HTRecordDisplayShort("HTTableSubject", $sub));
+            $this->page->addComponent(new HTRecordDisplay("HTTableAssay", $this->httable));
+            $_REQUEST['menu'] = 'assay'; $_REQUEST['mode'] = 'display'; //to inactivate the button of the menu
+            $this->page->setMenu(new HTMenuAssaySpecific());
+        }
+        catch(Exception $e)
+        {
+            $this->page->addComponent(new HTString("Could not add that record"));
+            $this->page->setMenu(new HTMenuPatient());
+        }
+	}
+
+    protected function getRequestData()
+    {
+		$_REQUEST['resultdate'] = HTUtils::date_en_mysql($_REQUEST['resultdate']);
+        foreach($_REQUEST as $key=>$value)
+            $this->httable->$key = $value;
+    }
+
+}//end of HTHandler_patient_process_update
+?>

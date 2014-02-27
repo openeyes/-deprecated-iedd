@@ -1,0 +1,13 @@
+<?php
+
+class HTHandler_patient_update extends HTHandler_priv
+{
+	public function constructPage(){
+		$this->page->addComponent(new HTFormTableSubject($_REQUEST['subjectid']));
+		$this->page->setMenu(new HTMenuPatientSpecific());
+	}
+}
+
+
+
+?>
