@@ -8,7 +8,7 @@ The start() method acts as a dispatcher for events which each construct a HTPage
 Finally HTPage::write_content() is called to provide the page.
 */
 class HTApplication {
-	private $LOGOUT_MINS = 15;
+	private $LOGOUT_MINS = 10;
 	private $page; //an HTPage object supplied by the relevant event handler
 	private $defaults = array("patient"=>"search","family"=>"search", "sample"=>"search",
 	"home" => "page", "assay" => "search", "logout"=>"logout");
