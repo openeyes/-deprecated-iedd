@@ -216,7 +216,11 @@ class HTTableSubject extends HTTable
             echo "\n<li>DNA - $s</li>";
          else
             echo "\n<li>DNA - None in the laboratory</li>";
+<<<<<<< HEAD
 		 echo "\n<li>Pedigree Link - <a href='".$_SERVER['PHP_SELF']."?menu=family&mode=display&newgc=".$this->newgc."'>".$this->newgc."</a></li>";
+=======
+	 echo "\n<li>Pedigree Link - <a href='".$_SERVER['PHP_SELF']."?menu=family&mode=display&newgc=".$this->newgc."'>".$this->newgc."</a></li>";
+>>>>>>> 15a2f2cb97d92673f7708eb376fafb7b328a5d4c
      }
 
     		//////////////////////////
