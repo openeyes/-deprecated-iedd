@@ -32,6 +32,7 @@ class HTHandler_patient_display extends HTHandler_priv
 					case 1:
 						$assoc_array = $res->fetch_assoc();
 						$id = $assoc_array['SubjectID'];
+						$_REQUEST['subjectid'] = $id;
 						$this->makePatientPage($id);
 						break;
 					default:
