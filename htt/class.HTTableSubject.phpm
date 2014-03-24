@@ -16,8 +16,8 @@ class HTTableSubject extends HTTable
         "yob" => "Birth Year",
         "gender" => "Gender",
         "mehno" => "MEH No.",
-        "status" => "Status"//,
-        //"newgc" => "Pedigree No."
+        "status" => "Status",
+        "newgc" => "Pedigree No."
         );
     private $diag_array = array();	//of strings of diagnoses
     private $dirty_diagnosis; 		//is diagnois data outofdate?
@@ -216,7 +216,6 @@ class HTTableSubject extends HTTable
             echo "\n<li>DNA - $s</li>";
          else
             echo "\n<li>DNA - None in the laboratory</li>";
-	 echo "\n<li>Pedigree Link - <a href='".$_SERVER['PHP_SELF']."?menu=family&mode=display&newgc=".$this->newgc."'>".$this->newgc."</a></li>";
      }
 
     		//////////////////////////
