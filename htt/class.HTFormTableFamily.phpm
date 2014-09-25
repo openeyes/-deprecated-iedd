@@ -23,8 +23,8 @@ class HTFormTableFamily extends HTForm
 			  new HTControlSelect("Mode of Inheritance",'inheritance',$inheritance_array),
 			  new HTControlSelect("Consanguinity",'consanguinity',$consang_array),
 			  new HTControlSelect("Causative gene (if known)",'geneid',$gene_array),
-			  new HTControlTextbox("Nucleotide change (if known)",'basechange','', false, 25, 26),
-			  new HTControlTextbox("Protein change (if known)",'aminoacidchange','', false, 25, 26),
+			  new HTControlTextbox("Nucleotide change (if known)",'basechange','', false, 40, 40),
+			  new HTControlTextbox("Protein change (if known)",'aminoacidchange','', false, 40, 40),
 			  new HTControlTextarea("Comments", 'FreeText','', false),
 		);
 
