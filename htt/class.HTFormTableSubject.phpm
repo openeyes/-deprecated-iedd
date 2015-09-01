@@ -32,7 +32,7 @@ class HTFormTableSubject extends HTForm
                   new HTControlTextbox("MEH&nbsp;number",'mehno','', false),
                   new HTControlSelect("Status",'status',$status_array),
                   new HTControlTextbox("Family&nbsp;Number",'newgc','', false),
-                  new HTControlTextarea("Comments", 'text','', false),
+                  new HTControlTextarea("Comments", 'text','', false, 60, 10),
                   new HTControlTextarea("Diagnoses", 'diagnosis', '', true),
                   new HTControlSelect("Diagnosis", 'diagnosis_add', $diagnosis_array)
             );
