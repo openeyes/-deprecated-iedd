@@ -1,5 +1,4 @@
 <?php
-
 //the new page. A more flexible class that can have a menu and a main component added. These both implement
 //the HTWebComponent interface so that display() can be called on them. All style and Javascript have been moved into
 //htt.css and htt.js files respectively

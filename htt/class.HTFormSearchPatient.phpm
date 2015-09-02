@@ -8,7 +8,7 @@ class HTFormSearchPatient extends HTForm
             $radio_word = array('Whole&nbsp;word' => 'whole', 'Part&nbsp;word' => 'part');
             //construct array for diagnoses
             $diag_array = array(''=>'');
-            $diag_array = array_merge($diag_array, HTTableDiagnosis::get_diagnosis_array(35));
+            $diag_array = array_merge($diag_array, HTTableDiagnosis::get_diagnosis_array(45));
 
             ////////////////start form here for id search.
             $this->begin_form();

@@ -14,7 +14,7 @@ class HTFormTableSubject extends HTForm
             //For each form the values of the fields are drawn from $_REQUEST[]
             //echo "<p>DEBUG HTpatientAddUpdate_new</p>";
             $diagnosis_array = array(''=>'');
-            $diagnosis_array = array_merge($diagnosis_array, HTTableDiagnosis::get_diagnosis_array(30));
+            $diagnosis_array = array_merge($diagnosis_array, HTTableDiagnosis::get_diagnosis_array(50));
             $gender_array = array(''=>'','Male'=>'Male', 'Female'=>'Female');
             $status_array = array('UNKNOWN'=>'Unknown','AFFECTED'=>'Affected', 'UNAFFECTED'=>'Unaffected', 'CARRIER'=>'Carrier');
             //$subject = new HTsubject($this->db,$this->subjectid);
