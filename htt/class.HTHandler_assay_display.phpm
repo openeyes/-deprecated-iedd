@@ -11,7 +11,7 @@ class HTHandler_assay_display extends HTHandler_priv
 	private $arg_array = array(); //an array to hold arguments for the DB_MySQL::prepare() function
 	//which elements of assay to display in a list
 	private $selectStr =
-	"assay.testid, assay.subjectid, genelist.gene, assay.assay, assay.basechange, assay.aminoacidchange, assay.resultdate, assay.effect ";
+	"assay.testid, assay.subjectid, genelist.gene, assay.method, assay.basechange, assay.aminoacidchange, assay.resultdate, assay.effect ";
 	public function constructPage(){
 		if($_REQUEST['testid'])
 		{
