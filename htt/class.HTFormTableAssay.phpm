@@ -13,9 +13,20 @@ class HTFormTableAssay extends HTForm
             //url. If mode is $add, an add button is shown.
             //For each form the values of the fields are drawn from $_REQUEST[]
             $gene_array = HTTableGenelist::get_gene_array();
-            $method_array = array("Sanger"=>"Dideoxy nucleotide sequencing", "Pyrosequencing"=>"Pyrosequencing",
-            	"SSCP"=>"single strand conformation polymorphism (SSCP)", "DHPLC"=>"WAVE DHPLC analysis",
-            	"endonuclease"=>"Endonuclease assay","APEX"=>"Asperbio chip", "Other" => "Other",   "SPEED_WGS"=>"NIHR-BRIDGE-SPEED Genome",   "SPEED_WES" =>"NIHR-BRIDGE-SPEED Exome");
+            $method_array = array(
+		"Sanger"=>"Dideoxy nucleotide sequencing (Sanger)", 
+		"Manchester_NGS" => "Manchester NGS Retinal Panel",
+		"Pyrosequencing"=>"Pyrosequencing",
+		"SPEED_WGS"=>"NIHR-BRIDGE-SPEED Genome",   
+		"SPEED_WES" =>"NIHR-BRIDGE-SPEED Exome",
+            	"SSCP"=>"single strand conformation polymorphism (SSCP)", 
+		"DHPLC"=>"WAVE DHPLC analysis",
+            	"endonuclease"=>"Endonuclease assay",
+		"APEX"=>"Asperbio chip",
+		"Usher_NCUS" => "NCUS Sanger panel",
+		"Other" => "Other"
+		)  
+		;
             $effect_array = array("Normal"=>"Normal", "Not sure"=>"Not sure","Polymorphism"=>"Polymorphism",
             	"Possible mutation"=>"Possible mutation");
             $homo_array = array("N"=>"No","Y"=>"Yes");
