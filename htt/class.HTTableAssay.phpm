@@ -11,8 +11,8 @@ class HTTableAssay extends HTTable
             "result" =>"Result",
             "resultdate" => "Date entered",
             "exon" => "Exon",
-            "primerf" => "Forward primer",
-            "primerr" => "Reverse primer",
+            //"primerf" => "Forward primer", // Deleted from table to make SPEED data entry easier July 2016
+            //"primerr" => "Reverse primer",
             "method" => "Method",
 			"basechange" => "Nucleotide",
 			"aminoacidchange" => "Protein",

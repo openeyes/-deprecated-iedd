@@ -36,10 +36,10 @@ class HTFormTableAssay extends HTForm
                   "dnano" => new HTControlTextbox("DNA&nbsp;Number",'dnano','', $this->mode == 'update'),
                   new HTControlSelect("Gene",'geneid',$gene_array),
                   new HTControlTextbox("Exon",'exon','', false, 25, 26),
-                  new HTControlTextbox("Assay", 'assay','',false, 25, 26),
+                  // new HTControlTextbox("Assay", 'assay','',false, 25, 26), // To simplify data entry for SPEED, I deleted this from the form
                   new HTControlSelect("Method",'method',$method_array),
-                  new HTControlTextbox("Forward&nbsp;Primer",'primerf','', false, 35, 36),
-                  new HTControlTextbox("Reverse&nbsp;Primer",'primerr','', false, 35, 36),
+                  //new HTControlTextbox("Forward&nbsp;Primer",'primerf','', false, 35, 36), // To simplify data entry for SPEED, I deleted these from this form
+                  //new HTControlTextbox("Reverse&nbsp;Primer",'primerr','', false, 35, 36),
                   "resultdate"=> new HTControlTextbox("Experiment&nbsp;date (dd/mm/yyyy)",'resultdate','', false,10),
                   new HTControlTextbox("Nucleotide&nbsp;change",'basechange','', false, 25, 26),
                   new HTControlTextBox("Protein change (if any)",'aminoacidchange','',false, 25, 26),
